@@ -402,58 +402,180 @@ def health():
 
 @app.route('/debug')
 def debug():
-    """Debug endpoint to check Chrome installation"""
+    """Comprehensive debug endpoint with extensive diagnostics"""
     import subprocess
+    import platform as plat
+    import shutil
+    import glob
+    
     debug_info = {
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
+        'system': {
+            'platform': plat.platform(),
+            'system': plat.system(),
+            'release': plat.release(),
+            'version': plat.version(),
+            'machine': plat.machine(),
+            'processor': plat.processor(),
+            'python_version': sys.version
+        },
         'environment': {
             'CHROME_BIN': os.environ.get('CHROME_BIN', 'Not set'),
             'CHROMEDRIVER_PATH': os.environ.get('CHROMEDRIVER_PATH', 'Not set'),
-            'PORT': os.environ.get('PORT', 'Not set')
+            'PORT': os.environ.get('PORT', 'Not set'),
+            'PATH': os.environ.get('PATH', 'Not set'),
+            'USER': os.environ.get('USER', 'Not set'),
+            'HOME': os.environ.get('HOME', 'Not set'),
+            'PWD': os.getcwd()
         },
-        'chrome_paths': {}
-    }
+        'chrome_paths': {},
+        'processes': {}
     
-    # Check various Chrome paths
+    # Check various Chrome paths with detailed info
     chrome_paths = [
         '/usr/bin/google-chrome',
         '/usr/bin/google-chrome-stable',
         '/usr/bin/chromium',
-        '/usr/bin/chromium-browser'
+        '/usr/bin/chromium-browser',
+        '/snap/bin/chromium'
     ]
     
+    debug_info['browsers'] = {}
     for path in chrome_paths:
-        debug_info['chrome_paths'][path] = os.path.exists(path)
+        if os.path.exists(path):
+            debug_info['browsers'][path] = {
+                'exists': True,
+                'size': os.path.getsize(path),
+                'executable': os.access(path, os.X_OK)
+            }
+            try:
+                result = subprocess.run([path, '--version'], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    debug_info['browsers'][path]['version'] = result.stdout.strip()
+                else:
+                    debug_info['browsers'][path]['version'] = f"Error: {result.stderr}"
+            except Exception as e:
+                debug_info['browsers'][path]['version'] = f"Exception: {str(e)}"
+        else:
+            debug_info['browsers'][path] = {'exists': False}
     
-    # Check ChromeDriver paths
+    # Check ChromeDriver paths with detailed info
     chromedriver_paths = [
         '/usr/local/bin/chromedriver',
         '/usr/bin/chromedriver',
         '/opt/chromedriver/chromedriver'
     ]
     
-    debug_info['chromedriver_paths'] = {}
+    debug_info['drivers'] = {}
     for path in chromedriver_paths:
-        debug_info['chromedriver_paths'][path] = os.path.exists(path)
-    
-    # Try to get Chrome version
-    try:
-        result = subprocess.run(['google-chrome-stable', '--version'], 
-                              capture_output=True, text=True, timeout=5)
-        debug_info['chrome_version'] = result.stdout.strip() if result.returncode == 0 else f"Error: {result.stderr}"
-    except Exception as e:
-        debug_info['chrome_version'] = f"Failed to get version: {str(e)}"
-    
-    # Try to get ChromeDriver version
-    try:
-        chromedriver_cmd = os.environ.get('CHROMEDRIVER_PATH', '/usr/local/bin/chromedriver')
-        if os.path.exists(chromedriver_cmd):
-            result = subprocess.run([chromedriver_cmd, '--version'], 
-                                  capture_output=True, text=True, timeout=5)
-            debug_info['chromedriver_version'] = result.stdout.strip() if result.returncode == 0 else f"Error: {result.stderr}"
+        if os.path.exists(path):
+            debug_info['drivers'][path] = {
+                'exists': True,
+                'size': os.path.getsize(path),
+                'executable': os.access(path, os.X_OK)
+            }
+            try:
+                result = subprocess.run([path, '--version'], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    debug_info['drivers'][path]['version'] = result.stdout.strip()
+                else:
+                    debug_info['drivers'][path]['version'] = f"Error: {result.stderr}"
+            except Exception as e:
+                debug_info['drivers'][path]['version'] = f"Exception: {str(e)}"
         else:
-            debug_info['chromedriver_version'] = f"ChromeDriver not found at {chromedriver_cmd}"
+            debug_info['drivers'][path] = {'exists': False}
+    
+    # Check PATH for executables
+    debug_info['in_path'] = {
+        'chrome': shutil.which('google-chrome') or shutil.which('google-chrome-stable'),
+        'chromium': shutil.which('chromium') or shutil.which('chromium-browser'),
+        'chromedriver': shutil.which('chromedriver')
+    }
+    
+    # List all files in /usr/bin that contain 'chrome' or 'chromium'
+    debug_info['chrome_related_files'] = []
+    try:
+        for file in glob.glob('/usr/bin/*chrome*') + glob.glob('/usr/bin/*chromium*'):
+            debug_info['chrome_related_files'].append(file)
+    except:
+        pass
+    
+    # Check running processes
+    try:
+        result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            chrome_processes = [line for line in result.stdout.split('\n') if 'chrome' in line.lower()]
+            debug_info['processes']['chrome_running'] = len(chrome_processes) > 0
+            debug_info['processes']['count'] = len(chrome_processes)
+            if chrome_processes:
+                debug_info['processes']['samples'] = chrome_processes[:3]  # Show first 3
+    except:
+        debug_info['processes']['error'] = 'Could not check processes'
+    
+    # Test Selenium initialization
+    debug_info['selenium_test'] = {}
+    try:
+        test_options = Options()
+        test_options.add_argument('--headless')
+        test_options.add_argument('--no-sandbox')
+        test_options.add_argument('--disable-dev-shm-usage')
+        
+        # Find available browser
+        browser_found = None
+        for browser_path in ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium']:
+            if os.path.exists(browser_path):
+                browser_found = browser_path
+                test_options.binary_location = browser_path
+                break
+        
+        debug_info['selenium_test']['browser_path'] = browser_found
+        
+        if browser_found:
+            # Try to create driver
+            try:
+                # Try with explicit chromedriver path
+                if os.path.exists('/usr/local/bin/chromedriver'):
+                    service = Service('/usr/local/bin/chromedriver')
+                    driver = webdriver.Chrome(service=service, options=test_options)
+                    debug_info['selenium_test']['initialization'] = 'Success with /usr/local/bin/chromedriver'
+                    driver.quit()
+                elif os.path.exists('/usr/bin/chromedriver'):
+                    service = Service('/usr/bin/chromedriver')
+                    driver = webdriver.Chrome(service=service, options=test_options)
+                    debug_info['selenium_test']['initialization'] = 'Success with /usr/bin/chromedriver'
+                    driver.quit()
+                else:
+                    driver = webdriver.Chrome(options=test_options)
+                    debug_info['selenium_test']['initialization'] = 'Success with default chromedriver'
+                    driver.quit()
+            except Exception as e:
+                debug_info['selenium_test']['initialization'] = f'Failed: {str(e)}'
+        else:
+            debug_info['selenium_test']['initialization'] = 'No browser found'
     except Exception as e:
-        debug_info['chromedriver_version'] = f"Failed to get version: {str(e)}"
+        debug_info['selenium_test']['error'] = str(e)
+    
+    # Disk space check
+    try:
+        stat = os.statvfs('/')
+        debug_info['disk_space'] = {
+            'free_gb': (stat.f_bavail * stat.f_frsize) / (1024**3),
+            'total_gb': (stat.f_blocks * stat.f_frsize) / (1024**3)
+        }
+    except:
+        debug_info['disk_space'] = 'Could not check'
+    
+    # Memory info
+    try:
+        with open('/proc/meminfo', 'r') as f:
+            meminfo = f.read()
+            for line in meminfo.split('\n'):
+                if 'MemTotal' in line:
+                    debug_info['memory_total'] = line
+                elif 'MemAvailable' in line:
+                    debug_info['memory_available'] = line
+    except:
+        debug_info['memory'] = 'Could not check'
     
     return jsonify(debug_info), 200
 
