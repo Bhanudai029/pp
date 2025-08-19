@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: fb-profile-downloader-docker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 10000
+    autoDeploy: true
+    plan: free
+    region: oregon # You can change this to your preferred region
+    healthCheckPath: /health
