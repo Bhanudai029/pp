@@ -400,6 +400,63 @@ def health():
     """Health check endpoint for Render"""
     return jsonify({'status': 'healthy'}), 200
 
+@app.route('/debug')
+def debug():
+    """Debug endpoint to check Chrome installation"""
+    import subprocess
+    debug_info = {
+        'environment': {
+            'CHROME_BIN': os.environ.get('CHROME_BIN', 'Not set'),
+            'CHROMEDRIVER_PATH': os.environ.get('CHROMEDRIVER_PATH', 'Not set'),
+            'PORT': os.environ.get('PORT', 'Not set')
+        },
+        'chrome_paths': {}
+    }
+    
+    # Check various Chrome paths
+    chrome_paths = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser'
+    ]
+    
+    for path in chrome_paths:
+        debug_info['chrome_paths'][path] = os.path.exists(path)
+    
+    # Check ChromeDriver paths
+    chromedriver_paths = [
+        '/usr/local/bin/chromedriver',
+        '/usr/bin/chromedriver',
+        '/opt/chromedriver/chromedriver'
+    ]
+    
+    debug_info['chromedriver_paths'] = {}
+    for path in chromedriver_paths:
+        debug_info['chromedriver_paths'][path] = os.path.exists(path)
+    
+    # Try to get Chrome version
+    try:
+        result = subprocess.run(['google-chrome-stable', '--version'], 
+                              capture_output=True, text=True, timeout=5)
+        debug_info['chrome_version'] = result.stdout.strip() if result.returncode == 0 else f"Error: {result.stderr}"
+    except Exception as e:
+        debug_info['chrome_version'] = f"Failed to get version: {str(e)}"
+    
+    # Try to get ChromeDriver version
+    try:
+        chromedriver_cmd = os.environ.get('CHROMEDRIVER_PATH', '/usr/local/bin/chromedriver')
+        if os.path.exists(chromedriver_cmd):
+            result = subprocess.run([chromedriver_cmd, '--version'], 
+                                  capture_output=True, text=True, timeout=5)
+            debug_info['chromedriver_version'] = result.stdout.strip() if result.returncode == 0 else f"Error: {result.stderr}"
+        else:
+            debug_info['chromedriver_version'] = f"ChromeDriver not found at {chromedriver_cmd}"
+    except Exception as e:
+        debug_info['chromedriver_version'] = f"Failed to get version: {str(e)}"
+    
+    return jsonify(debug_info), 200
+
 if __name__ == '__main__':
     # Use PORT from environment variable (Render provides this)
     port = int(os.environ.get('PORT', 5000))
