@@ -1,15 +1,10 @@
 services:
   - type: web
     name: fb-profile-picture-api
-    env: node
+    env: docker
+    dockerfilePath: ./api/Dockerfile
     plan: free
-    rootDir: api
-    buildCommand: "npm install && npx puppeteer browsers install chrome"
-    startCommand: "npm start"
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PUPPETEER_CACHE_DIR
-        value: "/opt/render/.cache/puppeteer"
-    healthCheckPath: /health
-    autoDeploy: true

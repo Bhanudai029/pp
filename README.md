@@ -1,11 +1,26 @@
 # Facebook Profile Picture Downloader
 
-This repository contains multiple Python scripts and a JavaScript API for downloading profile pictures from Facebook URLs using different approaches:
+This repository contains multiple approaches for downloading profile pictures from Facebook URLs:
+
+## Project Structure
+
+1. **Python Scripts** (`python_scripts/` directory):
+   - Multiple Python implementations for downloading Facebook profile pictures
+   - Includes UI, headless, and web versions
+
+2. **Node.js API** (`api/` directory):
+   - A REST API for downloading Facebook profile pictures
+   - Can be deployed to Render.com or run locally
+   - Uses Puppeteer for headless browser automation
+
+3. **Web UI** (`python_scripts/fb_profile_downloader_web.py`):
+   - A local web interface for downloading Facebook profile pictures
+   - Runs in headless mode to minimize resource usage
 
 ## Requirements
 
-- Python 3.6 or higher (for Python scripts)
-- Node.js 14+ (for JavaScript API)
+### Python Scripts
+- Python 3.6 or higher
 - Chrome Browser
 - Required Python packages:
   - selenium
@@ -15,7 +30,11 @@ This repository contains multiple Python scripts and a JavaScript API for downlo
   - pillow
   - flask
   - flask-cors
-- Required Node.js packages (for API):
+
+### Node.js API
+- Node.js 14+
+- Chrome Browser (installed automatically in Docker)
+- Required Node.js packages:
   - express
   - cors
   - axios
@@ -24,14 +43,17 @@ This repository contains multiple Python scripts and a JavaScript API for downlo
 ## Installation
 
 ### Python Scripts
-1. Make sure you have Python installed
+1. Navigate to the python_scripts directory:
+   ```
+   cd python_scripts
+   ```
 2. Install the required packages:
    ```
    pip install selenium requests webdriver-manager beautifulsoup4 pillow flask flask-cors
    ```
 
-### JavaScript API
-1. Navigate to the `api` directory:
+### Node.js API
+1. Navigate to the api directory:
    ```
    cd api
    ```
@@ -42,38 +64,18 @@ This repository contains multiple Python scripts and a JavaScript API for downlo
 
 ## Usage
 
-### Method 1: Web UI Version (fb_profile_downloader_web.py) - Recommended
+### Method 1: Web UI Version (python_scripts/fb_profile_downloader_web.py)
 This version provides a web interface for downloading Facebook profile pictures without opening file explorer.
 
 1. Start the web server:
    ```bash
+   cd python_scripts
    python fb_profile_downloader_web.py
    ```
 2. Open your browser and go to http://localhost:5000
 3. Enter the Facebook photo URL and click "Download Profile Picture"
 
-### Method 2: UI Version (fb_profile_downloader_ui.py)
-This version uses the ESC key technique and provides a graphical interface to view the screenshot.
-
-```bash
-python fb_profile_downloader_ui.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
-```
-
-### Method 3: Simple Headless Version (fb_profile_downloader_simple.py)
-This version runs in headless mode and doesn't open file explorer.
-
-```bash
-python fb_profile_downloader_simple.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
-```
-
-### Method 4: Selenium Version (fb_profile_downloader.py)
-This version uses browser automation to access the page like a real user.
-
-```bash
-python fb_profile_downloader.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
-```
-
-### Method 5: JavaScript API (api/)
+### Method 2: Node.js API (api/)
 This version provides a REST API for downloading Facebook profile pictures.
 
 1. Navigate to the API directory:
@@ -92,6 +94,30 @@ This version provides a REST API for downloading Facebook profile pictures.
    }
    ```
 
+### Method 3: UI Version (python_scripts/fb_profile_downloader_ui.py)
+This version uses the ESC key technique and provides a graphical interface to view the screenshot.
+
+```bash
+cd python_scripts
+python fb_profile_downloader_ui.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
+```
+
+### Method 4: Simple Headless Version (python_scripts/fb_profile_downloader_simple.py)
+This version runs in headless mode and doesn't open file explorer.
+
+```bash
+cd python_scripts
+python fb_profile_downloader_simple.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
+```
+
+### Method 5: Selenium Version (python_scripts/fb_profile_downloader.py)
+This version uses browser automation to access the page like a real user.
+
+```bash
+cd python_scripts
+python fb_profile_downloader.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
+```
+
 ## How It Works
 
 ### Web UI Version (Recommended)
@@ -99,6 +125,14 @@ This version provides a REST API for downloading Facebook profile pictures.
 2. Provides a web interface for entering Facebook URLs
 3. Uses Selenium in headless mode to download profile pictures
 4. Allows downloading the image directly from the browser
+
+### Node.js API
+1. Provides a REST endpoint for downloading Facebook profile pictures
+2. Uses Puppeteer in headless mode to access the page
+3. Automatically presses the ESC key to exit the photo viewer
+4. Downloads the image directly
+5. Saves the image in an "images" folder with the name "Free_FB_Zone_Profile_Picture.png"
+6. Returns a download URL in the response
 
 ### UI Version
 1. Takes a Facebook photo URL as input
@@ -122,14 +156,6 @@ This version provides a REST API for downloading Facebook profile pictures.
 3. Automatically presses the ESC key to exit the photo viewer
 4. Takes a screenshot and saves it to the "downloads" folder
 
-### JavaScript API
-1. Provides a REST endpoint for downloading Facebook profile pictures
-2. Uses Puppeteer in headless mode to access the page
-3. Automatically presses the ESC key to exit the photo viewer
-4. Downloads the image directly
-5. Saves the image in an "images" folder with the name "Free_FB_Zone_Profile_Picture.png"
-6. Returns a download URL in the response
-
 ## Note
 
 - Facebook frequently changes its UI and security measures, so these scripts might need updates over time
@@ -150,20 +176,22 @@ If you encounter the error "[WinError 193] %1 is not a valid Win32 application":
 3. Ensure your Chrome browser matches your Python architecture (both 32-bit or both 64-bit)
 4. Try using the Web UI version which has better error handling for Windows:
    ```bash
+   cd python_scripts
    python fb_profile_downloader_web.py
    ```
 5. As a last resort, manually download ChromeDriver that matches your system architecture from [ChromeDriver Downloads](https://chromedriver.chromium.org/downloads)
 
 ## Deployment
 
-### Deploying the JavaScript API to Render
+### Deploying the Node.js API to Render
 
 1. Fork this repository
 2. Create a new Web Service on Render
 3. Connect your forked repository
-4. Set the build command to `npm install`
-5. Set the start command to `npm start`
-6. Add the environment variables from `api/.buildpacks`
-7. Deploy!
+4. Render will automatically detect the `render.yaml` file
+5. Click "Apply" and then "Create Web Service"
+6. Wait for the deployment to complete
 
 The API will be available at your Render URL.
+
+For more information about the Node.js API, see the README.md file in the `api/` directory.

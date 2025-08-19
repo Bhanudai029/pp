@@ -1,0 +1,8 @@
+# This project primarily uses Node.js for the API
+# The Python scripts are in the python_scripts/ directory
+# This requirements.txt is only here to satisfy build systems that expect Python dependencies
+
+# For the Python scripts, you'll need:
+# pip install selenium requests webdriver-manager beautifulsoup4 pillow flask flask-cors
+
+# Empty requirements for now
