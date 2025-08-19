@@ -1,6 +1,0 @@
-# This project primarily uses Node.js for the API
-# The Python scripts are in the python_scripts/ directory
-# This file is only here to satisfy build systems that expect Python version specification
-
-# Python version
-python-3.13.4

@@ -1,197 +1,144 @@
 # Facebook Profile Picture Downloader
 
-This repository contains multiple approaches for downloading profile pictures from Facebook URLs:
+A Flask web application that allows users to download Facebook profile pictures using Selenium WebDriver.
 
-## Project Structure
+## Features
 
-1. **Python Scripts** (`python_scripts/` directory):
-   - Multiple Python implementations for downloading Facebook profile pictures
-   - Includes UI, headless, and web versions
+- Web interface for easy profile picture downloads
+- Headless Chrome browser automation
+- Automatic image extraction and download
+- Production-ready deployment configuration for Render.com
 
-2. **Node.js API** (`api/` directory):
-   - A REST API for downloading Facebook profile pictures
-   - Can be deployed to Render.com or run locally
-   - Uses Puppeteer for headless browser automation
+## Local Development
 
-3. **Web UI** (`python_scripts/fb_profile_downloader_web.py`):
-   - A local web interface for downloading Facebook profile pictures
-   - Runs in headless mode to minimize resource usage
+### Prerequisites
 
-## Requirements
+- Python 3.8+
+- Google Chrome browser
+- Git
 
-### Python Scripts
-- Python 3.6 or higher
-- Chrome Browser
-- Required Python packages:
-  - selenium
-  - requests
-  - webdriver-manager
-  - beautifulsoup4
-  - pillow
-  - flask
-  - flask-cors
+### Installation
 
-### Node.js API
-- Node.js 14+
-- Chrome Browser (installed automatically in Docker)
-- Required Node.js packages:
-  - express
-  - cors
-  - axios
-  - puppeteer
-
-## Installation
-
-### Python Scripts
-1. Navigate to the python_scripts directory:
-   ```
-   cd python_scripts
-   ```
-2. Install the required packages:
-   ```
-   pip install selenium requests webdriver-manager beautifulsoup4 pillow flask flask-cors
-   ```
-
-### Node.js API
-1. Navigate to the api directory:
-   ```
-   cd api
-   ```
-2. Install the required packages:
-   ```
-   npm install
-   ```
-
-## Usage
-
-### Method 1: Web UI Version (python_scripts/fb_profile_downloader_web.py)
-This version provides a web interface for downloading Facebook profile pictures without opening file explorer.
-
-1. Start the web server:
-   ```bash
-   cd python_scripts
-   python fb_profile_downloader_web.py
-   ```
-2. Open your browser and go to http://localhost:5000
-3. Enter the Facebook photo URL and click "Download Profile Picture"
-
-### Method 2: Node.js API (api/)
-This version provides a REST API for downloading Facebook profile pictures.
-
-1. Navigate to the API directory:
-   ```
-   cd api
-   ```
-2. Start the server:
-   ```
-   npm start
-   ```
-3. Use the API endpoint:
-   ```
-   POST /download
-   {
-     "url": "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
-   }
-   ```
-
-### Method 3: UI Version (python_scripts/fb_profile_downloader_ui.py)
-This version uses the ESC key technique and provides a graphical interface to view the screenshot.
-
+1. Clone the repository:
 ```bash
-cd python_scripts
-python fb_profile_downloader_ui.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
+git clone <your-repo-url>
+cd "api 3 profile pic"
 ```
 
-### Method 4: Simple Headless Version (python_scripts/fb_profile_downloader_simple.py)
-This version runs in headless mode and doesn't open file explorer.
-
+2. Create a virtual environment:
 ```bash
-cd python_scripts
-python fb_profile_downloader_simple.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
 ```
 
-### Method 5: Selenium Version (python_scripts/fb_profile_downloader.py)
-This version uses browser automation to access the page like a real user.
-
+3. Install dependencies:
 ```bash
-cd python_scripts
-python fb_profile_downloader.py "https://www.facebook.com/photo/?fbid=105948795901555&set=a.105948809234887"
+pip install -r requirements.txt
 ```
 
-## How It Works
+4. Run the application:
+```bash
+python app.py
+```
 
-### Web UI Version (Recommended)
-1. Starts a local web server on port 5000
-2. Provides a web interface for entering Facebook URLs
-3. Uses Selenium in headless mode to download profile pictures
-4. Allows downloading the image directly from the browser
+5. Open your browser and navigate to `http://localhost:5000`
 
-### Node.js API
-1. Provides a REST endpoint for downloading Facebook profile pictures
-2. Uses Puppeteer in headless mode to access the page
-3. Automatically presses the ESC key to exit the photo viewer
-4. Downloads the image directly
-5. Saves the image in an "images" folder with the name "Free_FB_Zone_Profile_Picture.png"
-6. Returns a download URL in the response
+## Deployment to Render.com
 
-### UI Version
-1. Takes a Facebook photo URL as input
-2. Uses Selenium with Chrome WebDriver to open the URL
-3. Automatically presses the ESC key to exit the photo viewer
-4. Takes a screenshot of the page showing the profile picture
-5. Displays the screenshot in a graphical interface
-6. Allows saving the screenshot to a desired location
+### Prerequisites
 
-### Simple Headless Version
-1. Takes a Facebook photo URL as input
-2. Uses Selenium in headless mode to access the page
-3. Automatically presses the ESC key to exit the photo viewer
-4. Downloads the image directly
-5. Saves the image in a "downloads" folder with the name "Free_FB_Zone_Profile_Picture.png"
-6. Provides a download link in the response
+1. Create a [Render.com](https://render.com) account
+2. Push your code to a GitHub repository
 
-### Selenium Version
-1. Takes a Facebook photo URL as input
-2. Uses Selenium with Chrome WebDriver to open the URL
-3. Automatically presses the ESC key to exit the photo viewer
-4. Takes a screenshot and saves it to the "downloads" folder
+### Deployment Steps
 
-## Note
+1. **Connect GitHub to Render:**
+   - Log in to your Render dashboard
+   - Click "New +" and select "Web Service"
+   - Connect your GitHub account if not already connected
+   - Select your repository
 
-- Facebook frequently changes its UI and security measures, so these scripts might need updates over time
-- Some photos may not be downloadable if they are private or have privacy restrictions
-- For best results, make sure you have Chrome browser installed
-- The Web UI version provides the best user experience with minimal resource usage
+2. **Configure the Service:**
+   - The service will automatically detect the `render.yaml` file
+   - All configuration is already set up in the file
+   - The free tier is configured by default
 
-## Troubleshooting WinError 193 on Windows
+3. **Deploy:**
+   - Click "Create Web Service"
+   - Render will automatically:
+     - Install Chrome and ChromeDriver
+     - Install Python dependencies
+     - Start the Flask application with Gunicorn
 
-If you encounter the error "[WinError 193] %1 is not a valid Win32 application":
+4. **Environment Variables (Optional):**
+   If you need to add any custom environment variables:
+   - Go to your service dashboard
+   - Navigate to "Environment" tab
+   - Add your variables
 
-1. This typically indicates an architecture mismatch between your Python installation and ChromeDriver
-2. Check if your Python is 32-bit or 64-bit:
-   ```python
-   import platform
-   print(platform.architecture())
-   ```
-3. Ensure your Chrome browser matches your Python architecture (both 32-bit or both 64-bit)
-4. Try using the Web UI version which has better error handling for Windows:
-   ```bash
-   cd python_scripts
-   python fb_profile_downloader_web.py
-   ```
-5. As a last resort, manually download ChromeDriver that matches your system architecture from [ChromeDriver Downloads](https://chromedriver.chromium.org/downloads)
+### Files Structure
 
-## Deployment
+```
+api 3 profile pic/
+├── app.py                 # Production-ready Flask application
+├── fb_profile_downloader_web.py  # Original web version
+├── fb_profile_downloader.py      # CLI version
+├── requirements.txt       # Python dependencies
+├── render.yaml           # Render deployment configuration
+├── build.sh             # Build script for Chrome installation
+├── start.sh             # Start script for Gunicorn
+├── .gitignore           # Git ignore file
+└── README.md            # This file
+```
 
-### Deploying the Node.js API to Render
+### Important Files for Deployment
 
-1. Fork this repository
-2. Create a new Web Service on Render
-3. Connect your forked repository
-4. Render will automatically detect the `render.yaml` file
-5. Click "Apply" and then "Create Web Service"
-6. Wait for the deployment to complete
+- **`render.yaml`**: Defines the service configuration for Render
+- **`build.sh`**: Installs Chrome and ChromeDriver in the Render environment
+- **`start.sh`**: Starts the application using Gunicorn
+- **`app.py`**: The main application file optimized for production
 
-The API will be available at your Render URL.
+### Monitoring
 
-For more information about the Node.js API, see the README.md file in the `api/` directory.
+Once deployed, you can monitor your application:
+- Check logs in the Render dashboard
+- Use the `/health` endpoint for health checks
+- Monitor the main page at your Render URL
+
+### Troubleshooting
+
+1. **Chrome/ChromeDriver Issues:**
+   - The build script automatically installs compatible versions
+   - Check logs for any installation errors
+
+2. **Memory Issues:**
+   - The free tier has limited memory
+   - The app is configured with 2 workers to balance performance and memory
+
+3. **Timeout Issues:**
+   - Gunicorn is configured with a 120-second timeout
+   - This should be sufficient for most downloads
+
+## API Endpoints
+
+- `GET /` - Main web interface
+- `POST /download` - Download profile picture (JSON API)
+- `GET /download_file` - Retrieve downloaded file
+- `GET /health` - Health check endpoint
+
+## Security Notes
+
+- The application runs Chrome in headless mode with sandbox disabled (required for container environments)
+- CORS is enabled for API access
+- No authentication is implemented - add if needed for production
+
+## License
+
+This project is for educational purposes. Please respect Facebook's Terms of Service and users' privacy when using this application.
+
+## Support
+
+For issues or questions, please create an issue in the GitHub repository.

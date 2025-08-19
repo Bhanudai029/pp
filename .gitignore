@@ -1,27 +1,53 @@
-# Global
-.DS_Store
-Thumbs.db
-*.log
-.env
-.env.*
-
-# Node
-node_modules/
-**/node_modules/
-.npm/
-.pnpm-store/
-
-# Build artifacts
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
 build/
+develop-eggs/
 dist/
-.cache/
-.tmp/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# OS / Editors
+# Flask
+instance/
+.webassets-cache
+
+# Environment variables
+.env
+.env.local
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# Project-specific
-api/images/
+# OS
+.DS_Store
+Thumbs.db
+
+# Application specific
 downloads/
-api/.puppeteer-cache/
+*.png
+*.jpg
+*.jpeg
+debug_screenshot.png
+
+# Logs
+*.log
