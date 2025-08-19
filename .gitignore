@@ -1,0 +1,27 @@
+# Global
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+
+# Node
+node_modules/
+**/node_modules/
+.npm/
+.pnpm-store/
+
+# Build artifacts
+build/
+dist/
+.cache/
+.tmp/
+
+# OS / Editors
+.vscode/
+.idea/
+
+# Project-specific
+api/images/
+downloads/
+api/.puppeteer-cache/

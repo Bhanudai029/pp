@@ -1,0 +1,22 @@
+# Netlify configuration for deploying the project
+# Note: This repository primarily contains a Node/Express API inside the `api/` directory.
+# Netlify is optimized for static sites and serverless functions. This config installs dependencies
+# so assets are available for any static/demo content. The Express API is not automatically
+# converted to Netlify Functions here.
+
+[build]
+  base = "api"
+  command = "npm install"
+  publish = "api"
+
+# Redirect root to a simple JSON for visibility if static files are served
+[[redirects]]
+  from = "/"
+  to = "/README.md"
+  status = 200
+
+# Prevent caching of dynamic-ish assets during iteration
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "no-cache"
