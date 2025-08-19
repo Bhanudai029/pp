@@ -80,6 +80,8 @@ The server will start on port 3000 by default, or the PORT environment variable 
 5. Click "Apply" and then "Create Web Service"
 6. Wait for the deployment to complete
 
+**Auto-Deploy:** This repository is configured with `autoDeploy: true` in the `render.yaml` file, which means that any new commits pushed to the main branch of your forked repository will automatically trigger a new deployment.
+
 ### Method 2: Manual Setup
 
 1. Fork this repository to your GitHub account
@@ -95,19 +97,12 @@ The server will start on port 3000 by default, or the PORT environment variable 
    ```
 6. Add environment variables:
    - `NODE_ENV` = `production`
-   - `CHROME_EXECUTABLE_PATH` = `/usr/bin/google-chrome-stable`
-7. Add buildpacks (in .buildpacks file):
-   ```
-   https://github.com/heroku/heroku-buildpack-google-chrome
-   heroku/nodejs
-   ```
-8. Deploy!
+7. Deploy!
 
 ## Environment Variables
 
-- `PORT` - The port to run the server on (default: 3000)
+- `PORT` - The port to run the server on (default: 10000)
 - `NODE_ENV` - Environment (production/development)
-- `CHROME_EXECUTABLE_PATH` - Path to Chrome executable (for Render deployment)
 
 ## Usage Example
 
