@@ -85,6 +85,10 @@ def get_chrome_options():
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--disable-software-rasterizer")
     chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-background-timer-throttling")
+    chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+    chrome_options.add_argument("--disable-renderer-backgrounding")
+    chrome_options.add_argument("--disable-ipc-flooding-protection")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
     # Priority order for Chrome binary locations:
@@ -108,9 +112,11 @@ def get_chrome_options():
             
             # Try to get Chrome version
             try:
-                result = subprocess.run([chrome_path, '--version'], capture_output=True, text=True, timeout=5)
+                result = subprocess.run([chrome_path, '--version'], capture_output=True, text=True, timeout=10)
                 if result.returncode == 0:
                     logger.info(f"Chrome version: {result.stdout.strip()}")
+                else:
+                    logger.warning(f"Could not get Chrome version: {result.stderr}")
             except Exception as e:
                 logger.warning(f"Could not get Chrome version: {e}")
             
@@ -136,6 +142,18 @@ def get_chrome_options():
                 chrome_found = True
                 break
     
+    # Final fallback: try to find Chrome using which command
+    if not chrome_found:
+        import shutil
+        chrome_paths = ["google-chrome-stable", "google-chrome", "chromium-browser", "chromium"]
+        for path in chrome_paths:
+            chrome_path = shutil.which(path)
+            if chrome_path:
+                chrome_options.binary_location = chrome_path
+                logger.info(f"Chrome binary found in PATH: {chrome_path}")
+                chrome_found = True
+                break
+    
     if not chrome_found:
         logger.error("Chrome binary not found in any expected location!")
         logger.error(f"Searched locations: {chrome_locations}")
@@ -143,6 +161,18 @@ def get_chrome_options():
         logger.error(f"CHROME_BIN: {os.environ.get('CHROME_BIN', 'Not set')}")
         logger.error(f"PATH: {os.environ.get('PATH', 'Not set')}")
         logger.error(f"Found chrome-related binaries: {chrome_binaries}")
+        
+        # List all files in common directories
+        common_dirs = ["/usr/bin", "/usr/local/bin", "/opt"]
+        for directory in common_dirs:
+            try:
+                if os.path.exists(directory):
+                    files = os.listdir(directory)
+                    chrome_files = [f for f in files if "chrome" in f.lower()]
+                    logger.error(f"Chrome-related files in {directory}: {chrome_files}")
+            except Exception as e:
+                logger.error(f"Could not list files in {directory}: {e}")
+        
         raise FileNotFoundError("Chrome browser is not installed. Please ensure Chrome is installed via build.sh")
     
     logger.info("="*50)
