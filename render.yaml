@@ -11,6 +11,8 @@ services:
         value: true
       - key: PYTHONUNBUFFERED
         value: 1
+      - key: CHROMEDRIVER_PATH
+        value: /opt/render/project/.render/chrome/chromedriver
     autoDeploy: true
     plan: free
     region: oregon # You can change this to your preferred region

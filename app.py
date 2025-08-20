@@ -137,6 +137,67 @@ def get_chrome_options():
     logger.info("="*50)
     return chrome_options
 
+def get_chrome_driver():
+    """Get Chrome driver configured for Render environment with proper error handling"""
+    try:
+        # Get Chrome options
+        chrome_options = get_chrome_options()
+        
+        # Try to get ChromeDriver path from environment
+        chromedriver_path = os.environ.get('CHROMEDRIVER_PATH')
+        
+        # If not set, try common locations
+        if not chromedriver_path or not os.path.exists(chromedriver_path):
+            common_paths = [
+                '/opt/render/project/.render/chrome/chromedriver',
+                '/usr/local/bin/chromedriver',
+                '/usr/bin/chromedriver'
+            ]
+            
+            for path in common_paths:
+                if os.path.exists(path):
+                    chromedriver_path = path
+                    break
+        
+        # If we have a valid ChromeDriver path, use it
+        if chromedriver_path and os.path.exists(chromedriver_path):
+            try:
+                logger.info(f"Initializing ChromeDriver from: {chromedriver_path}")
+                service = Service(chromedriver_path)
+                driver = webdriver.Chrome(service=service, options=chrome_options)
+                logger.info("ChromeDriver initialized successfully")
+                return driver
+            except Exception as e:
+                logger.warning(f"Failed to initialize ChromeDriver from {chromedriver_path}: {str(e)}")
+        
+        # If we're not on Render (local development), try webdriver-manager
+        if not os.environ.get('RENDER'):
+            try:
+                from webdriver_manager.chrome import ChromeDriverManager
+                logger.info("Attempting to use webdriver-manager for ChromeDriver (local development)")
+                os.environ['WDM_LOG'] = '0'  # Disable webdriver-manager logging
+                driver_path = ChromeDriverManager().install()
+                service = Service(driver_path)
+                driver = webdriver.Chrome(service=service, options=chrome_options)
+                logger.info("ChromeDriver initialized successfully with webdriver-manager")
+                return driver
+            except Exception as e:
+                logger.warning(f"Failed to initialize ChromeDriver with webdriver-manager: {str(e)}")
+        
+        # Last resort: try without explicit service
+        try:
+            logger.info("Attempting to initialize ChromeDriver without explicit path")
+            driver = webdriver.Chrome(options=chrome_options)
+            logger.info("ChromeDriver initialized successfully without explicit path")
+            return driver
+        except Exception as e:
+            logger.error(f"Failed to initialize ChromeDriver: {str(e)}")
+            raise RuntimeError(f"Unable to initialize ChromeDriver. Error: {str(e)}")
+            
+    except Exception as e:
+        logger.error(f"Error in get_chrome_driver(): {str(e)}")
+        raise
+
 def download_facebook_profile_picture(url):
     """
     Download a Facebook profile picture using Selenium in headless mode.
