@@ -2,15 +2,11 @@ services:
   - type: web
     name: fb-profile-downloader
     runtime: python
-    buildCommand: "chmod +x build.sh && ./build.sh"
-    startCommand: "gunicorn app:app --timeout 120 --workers 1 --threads 1 --bind 0.0.0.0:$PORT"
+    buildCommand: "chmod +x build.sh && sudo ./build.sh"
+    startCommand: "source .env && gunicorn app:app --timeout 120 --workers 1 --threads 1 --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: CHROME_BIN
-        value: /usr/bin/google-chrome-stable
-      - key: CHROMEDRIVER_PATH
-        value: /usr/local/bin/chromedriver
       - key: RENDER
         value: true
       - key: PYTHONUNBUFFERED
