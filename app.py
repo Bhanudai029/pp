@@ -88,21 +88,17 @@ def get_chrome_options():
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    # Try multiple Chrome binary locations
-    home_dir = Path.home()
+    # Priority order for Chrome binary locations:
+    # 1. Environment variable CHROME_BIN (set by Render)
+    # 2. Standard Render location /usr/bin/google-chrome-stable
+    # 3. Other common locations
+    
     chrome_locations = [
-        os.environ.get("CHROME_BIN"),
-        str(home_dir / ".local/bin/google-chrome-stable"),
-        str(home_dir / ".local/bin/google-chrome"),
-        str(home_dir / ".local/bin/chromium"),
-        str(home_dir / ".chrome/chrome/chrome"),
-        "/usr/bin/google-chrome-stable",
+        os.environ.get("CHROME_BIN"),  # This should be set by Render
+        "/usr/bin/google-chrome-stable",  # Standard Render location
         "/usr/bin/google-chrome",
         "/usr/bin/chromium-browser",
-        "/usr/bin/chromium",
-        "/opt/google/chrome/google-chrome",
-        "/opt/google/chrome/chrome",
-        "/usr/local/bin/google-chrome"
+        "/usr/bin/chromium"
     ]
     
     chrome_found = False
@@ -142,10 +138,14 @@ def get_chrome_driver():
         logger.error(str(e))
         raise
     
-    # Try multiple ChromeDriver locations
+    # Try multiple ChromeDriver locations with priority order:
+    # 1. Environment variable CHROMEDRIVER_PATH (set by Render)
+    # 2. Standard Render location /usr/local/bin/chromedriver
+    # 3. Other common locations
+    
     chromedriver_locations = [
-        os.environ.get("CHROMEDRIVER_PATH"),
-        "/usr/local/bin/chromedriver",
+        os.environ.get("CHROMEDRIVER_PATH"),  # Should be set by Render
+        "/usr/local/bin/chromedriver",       # Standard Render location
         "/usr/bin/chromedriver",
         "/opt/chromedriver/chromedriver"
     ]

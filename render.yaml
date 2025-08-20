@@ -3,7 +3,7 @@ services:
     name: fb-profile-downloader
     runtime: python
     buildCommand: "chmod +x build.sh && ./build.sh"
-    startCommand: "gunicorn app:app --timeout 120 --workers 1 --bind 0.0.0.0:$PORT"
+    startCommand: "gunicorn app:app --timeout 120 --workers 1 --threads 1 --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -25,3 +25,4 @@ services:
         - requirements.txt
         - render.yaml
         - build.sh
+        - Dockerfile

@@ -7,6 +7,7 @@ import subprocess
 import sys
 import platform
 import shutil
+from pathlib import Path
 
 def print_section(title):
     """Print a section header"""
@@ -25,17 +26,28 @@ def check_system_info():
     print(f"Release: {platform.release()}")
     print(f"Version: {platform.version()}")
     
-    # Check if we're root
-    print(f"\nRunning as UID: {os.getuid()}")
-    print(f"Running as GID: {os.getgid()}")
-    print(f"User: {os.environ.get('USER', 'unknown')}")
-    print(f"Home: {os.environ.get('HOME', 'unknown')}")
+    # Check if we're root (Linux only)
+    if platform.system() != "Windows":
+        try:
+            print(f"\nRunning as UID: {os.getuid()}")
+            print(f"Running as GID: {os.getgid()}")
+        except AttributeError:
+            pass  # Windows doesn't have these functions
+    
+    print(f"User: {os.environ.get('USER', os.environ.get('USERNAME', 'unknown'))}")
+    print(f"Home: {os.environ.get('HOME', os.environ.get('USERPROFILE', 'unknown'))}")
     print(f"PWD: {os.getcwd()}")
     
-    # Check available space
-    stat = os.statvfs('/')
-    free_space_gb = (stat.f_bavail * stat.f_frsize) / (1024**3)
-    print(f"\nFree disk space: {free_space_gb:.2f} GB")
+    # Check available space (Linux only)
+    if platform.system() != "Windows":
+        try:
+            stat = os.statvfs('/')
+            free_space_gb = (stat.f_bavail * stat.f_frsize) / (1024**3)
+            print(f"\nFree disk space: {free_space_gb:.2f} GB")
+        except AttributeError:
+            pass  # Windows doesn't have statvfs
+    else:
+        print("\nFree disk space: Not available on Windows")
 
 def check_existing_installations():
     """Check for existing Chrome/Chromium installations"""
@@ -120,6 +132,31 @@ def run_command(cmd, shell=True, verbose=True):
         print(f"   ❌ Exception: {str(e)}")
         return False
 
+def create_environment_file():
+    """Create environment file with Chrome paths for Render"""
+    print_section("CREATING ENVIRONMENT FILE")
+    
+    env_vars = {
+        'CHROME_BIN': '/usr/bin/google-chrome-stable',
+        'CHROMEDRIVER_PATH': '/usr/local/bin/chromedriver'
+    }
+    
+    # Create environment file in home directory
+    env_file_path = Path.home() / '.chrome_env'
+    print(f"Creating environment file at: {env_file_path}")
+    
+    with open(env_file_path, 'w') as f:
+        for key, value in env_vars.items():
+            f.write(f'export {key}={value}\n')
+    
+    # Also set environment variables for current session
+    for key, value in env_vars.items():
+        os.environ[key] = value
+    
+    print("Environment variables set:")
+    for key, value in env_vars.items():
+        print(f"  {key}={value}")
+
 def main():
     print("\n" + "#" * 70)
     print("#" + " " * 68 + "#")
@@ -143,45 +180,77 @@ def main():
     print("Installing dependencies...")
     run_command("apt-get install -y -qq wget gnupg unzip curl")
     
-    # Download Chrome .deb package directly
-    print("Downloading Chrome...")
-    if not run_command("wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"):
-        print("Failed to download Chrome")
+    # Add Google Chrome repository
+    print("Adding Google Chrome repository...")
+    run_command("wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -")
+    run_command('echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list')
+    
+    # Update package list again
+    print("Updating package list with Chrome repository...")
+    run_command("apt-get update -qq")
+    
+    # Install Chrome
+    print("Installing Google Chrome...")
+    if not run_command("apt-get install -y -qq google-chrome-stable"):
+        print("Failed to install Chrome")
         sys.exit(1)
-    
-    # Install Chrome and its dependencies
-    print("Installing Chrome...")
-    # First attempt
-    if not run_command("apt-get install -y -qq /tmp/chrome.deb"):
-        print("First install attempt failed, trying to fix dependencies...")
-        run_command("apt-get update -qq")
-        run_command("apt-get install -f -y -qq")
-        # Second attempt
-        if not run_command("apt-get install -y -qq /tmp/chrome.deb"):
-            print("Chrome installation failed!")
-            sys.exit(1)
-    
-    # Clean up
-    run_command("rm /tmp/chrome.deb")
     
     print_section("VERIFYING CHROME INSTALLATION")
     
     # Check if Chrome was installed
-    chrome_paths = [
-        "/usr/bin/google-chrome-stable",
-        "/usr/bin/google-chrome",
-        "/usr/bin/chromium-browser",
-        "/usr/bin/chromium"
-    ]
-    
-    chrome_found = None
-    for path in chrome_paths:
-        if os.path.exists(path):
-            chrome_found = path
-            print(f"✅ Chrome binary found at: {path}")
-            break
-    
-    if not chrome_found:
+    chrome_path = "/usr/bin/google-chrome-stable"
+    if os.path.exists(chrome_path):
+        print(f"✅ Chrome binary found at: {chrome_path}")
+        
+        # Get Chrome version
+        result = subprocess.run([chrome_path, "--version"], capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"✅ Browser version: {result.stdout.strip()}")
+            
+            # Extract version for ChromeDriver
+            try:
+                chrome_version = result.stdout.split()[2].split('.')[0]
+                print(f"Browser major version: {chrome_version}")
+                
+                print_section("INSTALLING CHROMEDRIVER")
+                
+                # Install ChromeDriver
+                chromedriver_url = f"https://chromedriver.storage.googleapis.com/LATEST_RELEASE_{chrome_version}"
+                result = subprocess.run(["curl", "-sS", chromedriver_url], capture_output=True, text=True)
+                if result.returncode == 0:
+                    chromedriver_version = result.stdout.strip()
+                    print(f"Installing ChromeDriver version: {chromedriver_version}")
+                    
+                    download_url = f"https://chromedriver.storage.googleapis.com/{chromedriver_version}/chromedriver_linux64.zip"
+                    if run_command(f"wget -O /tmp/chromedriver.zip {download_url}"):
+                        run_command("unzip -o /tmp/chromedriver.zip -d /usr/local/bin/")
+                        run_command("chmod +x /usr/local/bin/chromedriver")
+                        run_command("rm /tmp/chromedriver.zip")
+                        
+                        if os.path.exists("/usr/local/bin/chromedriver"):
+                            print("✅ ChromeDriver installed at /usr/local/bin/chromedriver")
+                            result = subprocess.run(["/usr/local/bin/chromedriver", "--version"], capture_output=True, text=True)
+                            if result.returncode == 0:
+                                print(f"✅ ChromeDriver version: {result.stdout.strip()}")
+                                
+                                # Create environment file
+                                create_environment_file()
+                        else:
+                            print("❌ ChromeDriver not found at expected location")
+                            sys.exit(1)
+                    else:
+                        print("❌ Failed to download ChromeDriver")
+                        sys.exit(1)
+                else:
+                    print("❌ Failed to get ChromeDriver version")
+                    sys.exit(1)
+            except Exception as e:
+                print(f"Error installing ChromeDriver: {e}")
+                sys.exit(1)
+        else:
+            print("❌ Failed to get Chrome version")
+            sys.exit(1)
+    else:
         print("❌ Chrome binary not found after installation!")
         print("\nAttempting alternative installation method...")
         
@@ -189,52 +258,17 @@ def main():
         print("\nTrying Chromium installation as fallback...")
         if run_command("apt-get install -y chromium-browser chromium-driver"):
             if os.path.exists("/usr/bin/chromium-browser"):
-                chrome_found = "/usr/bin/chromium-browser"
                 print("✅ Chromium installed successfully as fallback")
-    
-    if chrome_found:
-        # Get Chrome version
-        result = subprocess.run([chrome_found, "--version"], capture_output=True, text=True)
-        if result.returncode == 0:
-            print(f"✅ Browser version: {result.stdout.strip()}")
-            
-            # Extract version for ChromeDriver (if it's Chrome)
-            if "chrome" in chrome_found.lower():
-                try:
-                    chrome_version = result.stdout.split()[2].split('.')[0]
-                    print(f"Browser major version: {chrome_version}")
-                    
-                    print_section("INSTALLING CHROMEDRIVER")
-                    
-                    # Install ChromeDriver
-                    chromedriver_url = f"https://chromedriver.storage.googleapis.com/LATEST_RELEASE_{chrome_version}"
-                    result = subprocess.run(["curl", "-sS", chromedriver_url], capture_output=True, text=True)
-                    if result.returncode == 0:
-                        chromedriver_version = result.stdout.strip()
-                        print(f"Installing ChromeDriver version: {chromedriver_version}")
-                        
-                        download_url = f"https://chromedriver.storage.googleapis.com/{chromedriver_version}/chromedriver_linux64.zip"
-                        if run_command(f"wget -O /tmp/chromedriver.zip {download_url}"):
-                            run_command("unzip -o /tmp/chromedriver.zip -d /usr/local/bin/")
-                            run_command("chmod +x /usr/local/bin/chromedriver")
-                            run_command("rm /tmp/chromedriver.zip")
-                            
-                            if os.path.exists("/usr/local/bin/chromedriver"):
-                                print("✅ ChromeDriver installed at /usr/local/bin/chromedriver")
-                                result = subprocess.run(["/usr/local/bin/chromedriver", "--version"], capture_output=True, text=True)
-                                if result.returncode == 0:
-                                    print(f"✅ ChromeDriver version: {result.stdout.strip()}")
-                except Exception as e:
-                    print(f"Error installing ChromeDriver: {e}")
-            elif "chromium" in chrome_found.lower():
-                # For Chromium, check if chromium-driver is installed
-                if os.path.exists("/usr/bin/chromedriver"):
-                    print("✅ Chromium driver found at /usr/bin/chromedriver")
-                    # Create symlink for compatibility
-                    run_command("ln -sf /usr/bin/chromedriver /usr/local/bin/chromedriver")
-    else:
-        print("❌ Failed to install any browser!")
-        sys.exit(1)
+                # Create symlink for compatibility
+                run_command("ln -sf /usr/bin/chromedriver /usr/local/bin/chromedriver")
+                # Create environment file
+                create_environment_file()
+            else:
+                print("❌ Chromium browser not found")
+                sys.exit(1)
+        else:
+            print("❌ Failed to install any browser!")
+            sys.exit(1)
     
     print_section("FINAL VERIFICATION")
     check_existing_installations()
