@@ -32,8 +32,8 @@ if not os.path.exists(DOWNLOADS_DIR):
 # Global variable to store the last downloaded file path
 last_downloaded_file = None
 
-def get_chrome_options():
-    """Get Chrome options configured for the Render environment."""
+def get_chrome_driver():
+    """Get Chrome driver configured for the environment."""
     chrome_bin = os.environ.get('CHROME_BIN')
     if not chrome_bin or not os.path.exists(chrome_bin):
         raise FileNotFoundError(f"Chrome binary not found at path: {chrome_bin}")
@@ -44,17 +44,8 @@ def get_chrome_options():
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
-    return chrome_options
 
-def get_chrome_driver():
-    """Get Chrome driver configured for the environment."""
-    chromedriver_path = os.environ.get('CHROMEDRIVER_PATH')
-    if not chromedriver_path or not os.path.exists(chromedriver_path):
-        raise FileNotFoundError(f"ChromeDriver binary not found at path: {chromedriver_path}")
-
-    chrome_options = get_chrome_options()
-    service = Service(chromedriver_path)
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver = webdriver.Chrome(options=chrome_options)
     return driver
 
 def download_facebook_profile_picture(url):
