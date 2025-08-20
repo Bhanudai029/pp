@@ -45,9 +45,19 @@ wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/lin
 apt-get install -y /tmp/google-chrome-stable_current_amd64.deb
 rm /tmp/google-chrome-stable_current_amd64.deb
 
+# Create symlink for google-chrome command
+ln -s /usr/bin/google-chrome-stable /usr/bin/google-chrome || echo "Symlink already exists or failed to create"
+
 # Verify Chrome installation
 echo "Chrome installed at: $(which google-chrome-stable)"
 echo "Chrome version: $(google-chrome-stable --version)"
+
+# Check if google-chrome command exists
+if command -v google-chrome &> /dev/null; then
+    echo "google-chrome command available"
+else
+    echo "google-chrome command not available"
+fi
 
 # Get Chrome major version for ChromeDriver compatibility
 CHROME_VERSION=$(google-chrome-stable --version | awk '{print $3}' | awk -F'.' '{print $1}')
@@ -85,14 +95,6 @@ fi
 # Verify ChromeDriver installation
 echo "ChromeDriver installed at: $(which chromedriver)"
 echo "ChromeDriver version: $(chromedriver --version)"
-
-# Set environment variables
-export CHROME_BIN=/usr/bin/google-chrome-stable
-export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
-
-echo "Environment variables set:"
-echo "CHROME_BIN=$CHROME_BIN"
-echo "CHROMEDRIVER_PATH=$CHROMEDRIVER_PATH"
 
 # Install Python dependencies
 echo "Installing Python dependencies..."

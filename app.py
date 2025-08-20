@@ -71,9 +71,19 @@ def get_chrome_options():
             chrome_found = True
             break
     
+    # If we still haven't found Chrome, log additional debugging info
     if not chrome_found:
         logger.error("Chrome binary not found in any expected location!")
         logger.error(f"Searched locations: {chrome_locations}")
+        logger.error("Environment variables:")
+        logger.error(f"CHROME_BIN: {os.environ.get('CHROME_BIN', 'Not set')}")
+        logger.error(f"PATH: {os.environ.get('PATH', 'Not set')}")
+        
+        # Try to find any chrome-related binaries in common locations
+        import glob
+        chrome_bins = glob.glob("/usr/bin/*chrome*") + glob.glob("/usr/bin/*chromium*")
+        logger.error(f"Found chrome-related binaries: {chrome_bins}")
+        
         raise FileNotFoundError("Chrome browser is not installed. Please ensure Chrome is installed via build.sh")
     
     return chrome_options
