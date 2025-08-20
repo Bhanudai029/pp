@@ -36,7 +36,7 @@ last_downloaded_file = None
 def get_chrome_options():
     """Get Chrome options configured for Render environment"""
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless=new")  # Use new headless mode
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
@@ -48,44 +48,67 @@ def get_chrome_options():
     chrome_options.add_argument("--disable-web-security")
     chrome_options.add_argument("--disable-features=VizDisplayCompositor")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+    chrome_options.add_argument("--remote-debugging-port=9222")  # Enable remote debugging
+    chrome_options.add_argument("--disable-software-rasterizer")
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    # Use Chrome binary from environment variable if available
-    chrome_bin = os.environ.get("CHROME_BIN")
-    if chrome_bin and os.path.exists(chrome_bin):
-        chrome_options.binary_location = chrome_bin
-        logger.info(f"Using Chrome binary from CHROME_BIN: {chrome_bin}")
-    elif os.path.exists("/usr/bin/google-chrome-stable"):
-        chrome_options.binary_location = "/usr/bin/google-chrome-stable"
-        logger.info("Using Chrome binary: /usr/bin/google-chrome-stable")
-    elif os.path.exists("/usr/bin/google-chrome"):
-        chrome_options.binary_location = "/usr/bin/google-chrome"
-        logger.info("Using Chrome binary: /usr/bin/google-chrome")
-    else:
-        logger.warning("Chrome binary not found in expected locations")
+    # Try multiple Chrome binary locations
+    chrome_locations = [
+        os.environ.get("CHROME_BIN"),
+        "/usr/bin/google-chrome-stable",
+        "/usr/bin/google-chrome",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+        "/opt/google/chrome/google-chrome"
+    ]
+    
+    chrome_found = False
+    for chrome_path in chrome_locations:
+        if chrome_path and os.path.exists(chrome_path):
+            chrome_options.binary_location = chrome_path
+            logger.info(f"Chrome binary found at: {chrome_path}")
+            chrome_found = True
+            break
+    
+    if not chrome_found:
+        logger.error("Chrome binary not found in any expected location!")
+        logger.error(f"Searched locations: {chrome_locations}")
+        raise FileNotFoundError("Chrome browser is not installed. Please ensure Chrome is installed via build.sh")
     
     return chrome_options
 
 def get_chrome_driver():
     """Get Chrome driver configured for the environment"""
-    chrome_options = get_chrome_options()
+    try:
+        chrome_options = get_chrome_options()
+    except FileNotFoundError as e:
+        logger.error(str(e))
+        raise
     
-    # Check if we're on Render (has CHROMEDRIVER_PATH env var)
-    chromedriver_path = os.environ.get("CHROMEDRIVER_PATH")
+    # Try multiple ChromeDriver locations
+    chromedriver_locations = [
+        os.environ.get("CHROMEDRIVER_PATH"),
+        "/usr/local/bin/chromedriver",
+        "/usr/bin/chromedriver",
+        "/opt/chromedriver/chromedriver"
+    ]
     
-    if chromedriver_path and os.path.exists(chromedriver_path):
-        # Use the ChromeDriver installed by build.sh on Render
-        logger.info(f"Using ChromeDriver from CHROMEDRIVER_PATH: {chromedriver_path}")
-        service = Service(chromedriver_path)
-        return webdriver.Chrome(service=service, options=chrome_options)
-    elif os.path.exists("/usr/local/bin/chromedriver"):
-        # Try the default installation path
-        logger.info("Using ChromeDriver from /usr/local/bin/chromedriver")
-        service = Service("/usr/local/bin/chromedriver")
-        return webdriver.Chrome(service=service, options=chrome_options)
-    else:
-        # Use webdriver-manager for local development
-        logger.info("Attempting to use webdriver-manager for ChromeDriver")
+    for chromedriver_path in chromedriver_locations:
+        if chromedriver_path and os.path.exists(chromedriver_path):
+            try:
+                logger.info(f"Attempting to use ChromeDriver at: {chromedriver_path}")
+                service = Service(chromedriver_path)
+                driver = webdriver.Chrome(service=service, options=chrome_options)
+                logger.info(f"Successfully initialized ChromeDriver from: {chromedriver_path}")
+                return driver
+            except Exception as e:
+                logger.warning(f"Failed to use ChromeDriver at {chromedriver_path}: {str(e)}")
+                continue
+    
+    # If we're not on Render (local development), try webdriver-manager
+    if not os.environ.get("RENDER"):
+        logger.info("Attempting to use webdriver-manager for ChromeDriver (local development)")
         try:
             # Disable WDM logging to avoid confusion
             os.environ['WDM_LOG'] = '0'
@@ -94,9 +117,16 @@ def get_chrome_driver():
             return webdriver.Chrome(service=Service(driver_path), options=chrome_options)
         except Exception as e:
             logger.error(f"Error with webdriver-manager: {str(e)}")
-            # Last resort - try without service
-            logger.info("Attempting to use Chrome without explicit driver path")
-            return webdriver.Chrome(options=chrome_options)
+    
+    # If all else fails, try without explicit service (might work with PATH)
+    try:
+        logger.info("Last attempt: Trying to use Chrome without explicit driver path")
+        driver = webdriver.Chrome(options=chrome_options)
+        logger.info("Successfully initialized ChromeDriver without explicit path")
+        return driver
+    except Exception as e:
+        logger.error(f"Failed to initialize ChromeDriver: {str(e)}")
+        raise RuntimeError("Unable to initialize ChromeDriver. Please ensure Chrome and ChromeDriver are properly installed.")
 
 def download_facebook_profile_picture(url):
     """

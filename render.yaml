@@ -3,24 +3,25 @@ services:
     name: fb-profile-downloader
     runtime: python
     buildCommand: "chmod +x build.sh && ./build.sh"
-    startCommand: "chmod +x start.sh && ./start.sh"
+    startCommand: "gunicorn app:app --timeout 120 --workers 1 --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: PORT
-        value: 10000
       - key: CHROME_BIN
         value: /usr/bin/google-chrome-stable
       - key: CHROMEDRIVER_PATH
-        value: /usr/bin/chromedriver
+        value: /usr/local/bin/chromedriver
+      - key: RENDER
+        value: true
+      - key: PYTHONUNBUFFERED
+        value: 1
     autoDeploy: true
     plan: free
     region: oregon # You can change this to your preferred region
-    healthCheckPath: /
+    healthCheckPath: /health
     buildFilter:
       paths:
         - "**/*.py"
         - requirements.txt
         - render.yaml
         - build.sh
-        - start.sh
