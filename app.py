@@ -83,7 +83,6 @@ def get_chrome_options():
     chrome_options.add_argument("--disable-web-security")
     chrome_options.add_argument("--disable-features=VizDisplayCompositor")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("--remote-debugging-port=9222")  # Enable remote debugging
     chrome_options.add_argument("--disable-software-rasterizer")
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -117,6 +116,25 @@ def get_chrome_options():
             
             chrome_found = True
             break
+    
+    # If we still haven't found Chrome, check if we're in a Docker environment
+    # where Chrome might be installed but not in the expected locations
+    if not chrome_found:
+        # Try to find any Chrome/Chromium binary in common locations
+        possible_chrome_paths = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser",
+            "/opt/google/chrome/google-chrome",
+            "/snap/bin/chromium"
+        ]
+        
+        for path in possible_chrome_paths:
+            if os.path.exists(path):
+                chrome_options.binary_location = path
+                logger.info(f"Chrome binary found at alternative location: {path}")
+                chrome_found = True
+                break
     
     if not chrome_found:
         logger.error("Chrome binary not found in any expected location!")

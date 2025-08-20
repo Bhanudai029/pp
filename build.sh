@@ -19,9 +19,11 @@ echo "Adding Google Chrome repository..."
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
 echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
 
+# Update package list with Chrome repository
+apt-get update -qq
+
 # Install Chrome
 echo "Installing Google Chrome..."
-apt-get update -qq
 apt-get install -y -qq google-chrome-stable
 
 # Install ChromeDriver
@@ -40,6 +42,16 @@ if [ -f "/usr/bin/google-chrome-stable" ]; then
     google-chrome-stable --version
 else
     echo "❌ Chrome not found at expected location"
+    # Try to find Chrome in other locations
+    CHROME_PATH=$(find /usr -name "*chrome*" -type f 2>/dev/null | grep -E "(chrome|chromium)" | head -1)
+    if [ ! -z "$CHROME_PATH" ] && [ -f "$CHROME_PATH" ]; then
+        echo "✅ Chrome found at alternative location: $CHROME_PATH"
+        ln -sf "$CHROME_PATH" /usr/bin/google-chrome-stable
+        echo "✅ Created symlink to /usr/bin/google-chrome-stable"
+    else
+        echo "❌ Chrome not found anywhere"
+        exit 1
+    fi
 fi
 
 if [ -f "/usr/local/bin/chromedriver" ]; then

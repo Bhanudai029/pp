@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     unzip \
     curl \
+    findutils \
     && rm -rf /var/lib/apt/lists/*
 
 # Add Google Chrome repository
@@ -41,6 +42,18 @@ RUN CHROME_VERSION=$(google-chrome-stable --version | awk '{print $3}' | cut -d'
     && unzip /tmp/chromedriver.zip -d /usr/local/bin/ \
     && chmod +x /usr/local/bin/chromedriver \
     && rm /tmp/chromedriver.zip
+
+# Verify Chrome installation and create symlink if needed
+RUN if [ ! -f "/usr/bin/google-chrome-stable" ]; then \
+        CHROME_PATH=$(find /usr -name "*chrome*" -type f 2>/dev/null | grep -E "(chrome|chromium)" | head -1) && \
+        if [ ! -z "$CHROME_PATH" ] && [ -f "$CHROME_PATH" ]; then \
+            ln -sf "$CHROME_PATH" /usr/bin/google-chrome-stable && \
+            echo "Created symlink to Chrome at /usr/bin/google-chrome-stable"; \
+        else \
+            echo "Chrome not found"; \
+            exit 1; \
+        fi; \
+    fi
 
 # Set working directory
 WORKDIR /app
