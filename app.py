@@ -50,6 +50,7 @@ def get_chrome_options():
                         line = line.replace('export ', '')
                         key, value = line.strip().split('=', 1)
                         os.environ[key] = value
+                        logger.info(f"Loaded {key}={value}")
     
     # Log environment information
     logger.info("="*50)
@@ -59,16 +60,45 @@ def get_chrome_options():
     logger.info(f"PATH: {os.environ.get('PATH', 'Not set')}")
     logger.info(f"HOME: {os.environ.get('HOME', 'Not set')}")
     
-    # Search for any chrome-related binaries
-    home_dir = Path.home()
-    chrome_binaries = (
-        glob.glob('/usr/bin/*chrome*') + 
-        glob.glob('/opt/*/chrome*') + 
-        glob.glob('/usr/local/bin/*chrome*') +
-        glob.glob(str(home_dir / '.local/bin/*chrome*')) +
-        glob.glob(str(home_dir / '.chrome/chrome/*chrome*'))
-    )
-    logger.info(f"Found chrome-related binaries: {chrome_binaries}")
+    # Verify that CHROME_BIN is set and points to an existing file
+    chrome_bin = os.environ.get('CHROME_BIN')
+    if not chrome_bin or not os.path.exists(chrome_bin):
+        logger.error(f"CHROME_BIN not set or does not exist: {chrome_bin}")
+        # Try to find Chrome in common locations
+        common_paths = [
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium"
+        ]
+        
+        chrome_found = False
+        for path in common_paths:
+            if os.path.exists(path):
+                chrome_bin = path
+                os.environ['CHROME_BIN'] = path
+                logger.info(f"Found Chrome at: {path}")
+                chrome_found = True
+                break
+        
+        if not chrome_found:
+            # Try to find Chrome using which command
+            import shutil
+            for browser in ['google-chrome-stable', 'google-chrome', 'chromium-browser', 'chromium']:
+                path = shutil.which(browser)
+                if path:
+                    chrome_bin = path
+                    os.environ['CHROME_BIN'] = path
+                    logger.info(f"Found Chrome in PATH: {path}")
+                    chrome_found = True
+                    break
+            
+            if not chrome_found:
+                logger.error("Chrome not found in any location!")
+                logger.error(f"Common paths checked: {common_paths}")
+                raise FileNotFoundError("Chrome browser is not installed. Please ensure Chrome is installed via build.sh")
+    
+    logger.info(f"Using Chrome binary: {chrome_bin}")
     
     chrome_options = Options()
     chrome_options.add_argument("--headless=new")  # Use new headless mode
@@ -102,89 +132,20 @@ def get_chrome_options():
     chrome_options.add_argument("--ignore-certificate-errors")
     chrome_options.add_argument("--ignore-ssl-errors")
     chrome_options.add_argument("--ignore-certificate-errors-spki-list")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    # Priority order for Chrome binary locations:
-    # 1. Environment variable CHROME_BIN (set by Render)
-    # 2. Standard locations
+    # Set the binary location
+    chrome_options.binary_location = chrome_bin
     
-    chrome_locations = [
-        os.environ.get("CHROME_BIN"),  # This should be set by Render
-        "/usr/bin/google-chrome-stable",
-        "/usr/bin/google-chrome",
-        "/usr/bin/chromium-browser",
-        "/usr/bin/chromium"
-    ]
-    
-    chrome_found = False
-    for chrome_path in chrome_locations:
-        if chrome_path and os.path.exists(chrome_path):
-            chrome_options.binary_location = chrome_path
-            logger.info(f"Chrome binary found at: {chrome_path}")
-            
-            # Try to get Chrome version
-            try:
-                result = subprocess.run([chrome_path, '--version'], capture_output=True, text=True, timeout=10)
-                if result.returncode == 0:
-                    logger.info(f"Chrome version: {result.stdout.strip()}")
-                else:
-                    logger.warning(f"Could not get Chrome version: {result.stderr}")
-            except Exception as e:
-                logger.warning(f"Could not get Chrome version: {e}")
-            
-            chrome_found = True
-            break
-    
-    # If we still haven't found Chrome, check if we're in a Docker environment
-    # where Chrome might be installed but not in the expected locations
-    if not chrome_found:
-        # Try to find any Chrome/Chromium binary in common locations
-        possible_chrome_paths = [
-            "/usr/bin/google-chrome-stable",
-            "/usr/bin/google-chrome",
-            "/usr/bin/chromium-browser",
-            "/usr/bin/chromium"
-        ]
-        
-        for path in possible_chrome_paths:
-            if os.path.exists(path):
-                chrome_options.binary_location = path
-                logger.info(f"Chrome binary found at alternative location: {path}")
-                chrome_found = True
-                break
-    
-    # Final fallback: try to find Chrome using which command
-    if not chrome_found:
-        import shutil
-        chrome_paths = ["google-chrome-stable", "google-chrome", "chromium-browser", "chromium"]
-        for path in chrome_paths:
-            chrome_path = shutil.which(path)
-            if chrome_path:
-                chrome_options.binary_location = chrome_path
-                logger.info(f"Chrome binary found in PATH: {chrome_path}")
-                chrome_found = True
-                break
-    
-    if not chrome_found:
-        logger.error("Chrome binary not found in any expected location!")
-        logger.error(f"Searched locations: {chrome_locations}")
-        logger.error("Environment variables:")
-        logger.error(f"CHROME_BIN: {os.environ.get('CHROME_BIN', 'Not set')}")
-        logger.error(f"PATH: {os.environ.get('PATH', 'Not set')}")
-        logger.error(f"Found chrome-related binaries: {chrome_binaries}")
-        
-        # List all files in common directories
-        common_dirs = ["/usr/bin", "/usr/local/bin", "/opt"]
-        for directory in common_dirs:
-            try:
-                if os.path.exists(directory):
-                    files = os.listdir(directory)
-                    chrome_files = [f for f in files if "chrome" in f.lower()]
-                    logger.error(f"Chrome-related files in {directory}: {chrome_files}")
-            except Exception as e:
-                logger.error(f"Could not list files in {directory}: {e}")
-        
-        raise FileNotFoundError("Chrome browser is not installed. Please ensure Chrome is installed via build.sh")
+    # Verify Chrome can be executed
+    try:
+        result = subprocess.run([chrome_bin, '--version'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            logger.info(f"Chrome version: {result.stdout.strip()}")
+        else:
+            logger.warning(f"Could not get Chrome version: {result.stderr}")
+    except Exception as e:
+        logger.warning(f"Could not get Chrome version: {e}")
     
     logger.info("="*50)
     return chrome_options
@@ -197,29 +158,40 @@ def get_chrome_driver():
         logger.error(str(e))
         raise
     
-    # Try multiple ChromeDriver locations with priority order:
-    # 1. Environment variable CHROMEDRIVER_PATH (set by Render)
-    # 2. Standard Render location /usr/local/bin/chromedriver
-    # 3. Other common locations
+    # Try to use the CHROMEDRIVER_PATH environment variable first
+    chromedriver_path = os.environ.get("CHROMEDRIVER_PATH")
     
-    chromedriver_locations = [
-        os.environ.get("CHROMEDRIVER_PATH"),  # Should be set by Render
-        "/usr/local/bin/chromedriver",       # Standard Render location
-        "/usr/bin/chromedriver",
-        "/opt/chromedriver/chromedriver"
-    ]
+    # If that's not set or doesn't exist, try common locations
+    if not chromedriver_path or not os.path.exists(chromedriver_path):
+        common_paths = [
+            "/usr/local/bin/chromedriver",
+            "/usr/bin/chromedriver",
+            "/opt/chromedriver/chromedriver"
+        ]
+        
+        for path in common_paths:
+            if os.path.exists(path):
+                chromedriver_path = path
+                logger.info(f"Found ChromeDriver at: {path}")
+                break
     
-    for chromedriver_path in chromedriver_locations:
-        if chromedriver_path and os.path.exists(chromedriver_path):
-            try:
-                logger.info(f"Attempting to use ChromeDriver at: {chromedriver_path}")
-                service = Service(chromedriver_path)
-                driver = webdriver.Chrome(service=service, options=chrome_options)
-                logger.info(f"Successfully initialized ChromeDriver from: {chromedriver_path}")
-                return driver
-            except Exception as e:
-                logger.warning(f"Failed to use ChromeDriver at {chromedriver_path}: {str(e)}")
-                continue
+    # If we still don't have a path, try to find it in PATH
+    if not chromedriver_path or not os.path.exists(chromedriver_path):
+        import shutil
+        chromedriver_path = shutil.which("chromedriver")
+        if chromedriver_path:
+            logger.info(f"Found ChromeDriver in PATH: {chromedriver_path}")
+    
+    # If we have a valid path, use it
+    if chromedriver_path and os.path.exists(chromedriver_path):
+        try:
+            logger.info(f"Attempting to use ChromeDriver at: {chromedriver_path}")
+            service = Service(chromedriver_path)
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            logger.info(f"Successfully initialized ChromeDriver from: {chromedriver_path}")
+            return driver
+        except Exception as e:
+            logger.warning(f"Failed to use ChromeDriver at {chromedriver_path}: {str(e)}")
     
     # If we're not on Render (local development), try webdriver-manager
     if not os.environ.get("RENDER"):

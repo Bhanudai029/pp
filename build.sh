@@ -9,110 +9,111 @@ echo "User: $(whoami)"
 echo "Home directory: $HOME"
 echo "========================================"
 
+# Function to install Chrome
+install_chrome() {
+    echo "Installing Google Chrome..."
+    
+    # Add Google Chrome repository
+    echo "Adding Google Chrome repository..."
+    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - 2>/dev/null || curl -s https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+    
+    # Update package list
+    apt-get update -qq
+    
+    # Install Chrome
+    apt-get install -y -qq google-chrome-stable
+    
+    # Verify installation
+    if command -v google-chrome-stable &> /dev/null; then
+        echo "✅ Google Chrome installed successfully"
+        CHROME_PATH=$(which google-chrome-stable)
+        echo "Chrome path: $CHROME_PATH"
+        google-chrome-stable --version
+        echo "export CHROME_BIN=$CHROME_PATH" >> $HOME/.chrome_env
+        echo "export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver" >> $HOME/.chrome_env
+        return 0
+    else
+        echo "❌ Google Chrome installation failed"
+        return 1
+    fi
+}
+
+# Function to install Chromium as fallback
+install_chromium() {
+    echo "Installing Chromium as fallback..."
+    
+    # Update package list
+    apt-get update -qq
+    
+    # Install Chromium
+    apt-get install -y -qq chromium-browser chromium-chromedriver
+    
+    # Verify installation
+    if command -v chromium-browser &> /dev/null; then
+        echo "✅ Chromium installed successfully"
+        CHROMIUM_PATH=$(which chromium-browser)
+        echo "Chromium path: $CHROMIUM_PATH"
+        chromium-browser --version
+        echo "export CHROME_BIN=$CHROMIUM_PATH" >> $HOME/.chrome_env
+        echo "export CHROMEDRIVER_PATH=$(which chromedriver)" >> $HOME/.chrome_env
+        return 0
+    else
+        echo "❌ Chromium installation failed"
+        return 1
+    fi
+}
+
 # Install system dependencies
 echo "Installing system dependencies..."
 apt-get update -qq
-apt-get install -y -qq wget gnupg unzip curl ca-certificates fonts-liberation \
-  libasound2 libatk-bridge2.0-0 libatk1.0-0 libc6 libcairo2 libcups2 \
-  libdbus-1-3 libexpat1 libfontconfig1 libgbm1 libgcc1 libglib2.0-0 \
-  libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 \
-  libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 \
-  libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 \
-  libxss1 libxtst6 lsb-release wget xdg-utils
+apt-get install -y -qq wget curl gnupg unzip ca-certificates \
+  fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 \
+  libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 \
+  libgbm1 libgcc1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 \
+  libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 \
+  libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 \
+  libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 \
+  libxtst6 lsb-release xdg-utils
 
-# Add Google Chrome repository
-echo "Adding Google Chrome repository..."
-wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
-echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+# Create environment file
+echo "# Chrome environment variables" > $HOME/.chrome_env
+echo "export RENDER=true" >> $HOME/.chrome_env
 
-# Update package list with Chrome repository
-apt-get update -qq
-
-# Install Chrome
-echo "Installing Google Chrome..."
-apt-get install -y -qq google-chrome-stable
-
-# Verify Chrome installation
-echo "Verifying Chrome installation..."
-if command -v google-chrome-stable &> /dev/null; then
-    echo "✅ Chrome installed successfully"
-    google-chrome-stable --version
-    CHROME_BIN_PATH=$(which google-chrome-stable)
-    echo "Chrome binary path: $CHROME_BIN_PATH"
-else
-    echo "❌ Chrome installation failed, trying Chromium..."
-    apt-get install -y -qq chromium-browser
-    if command -v chromium-browser &> /dev/null; then
-        echo "✅ Chromium installed successfully"
-        chromium-browser --version
-        CHROME_BIN_PATH=$(which chromium-browser)
-        echo "Chromium binary path: $CHROME_BIN_PATH"
-    else
+# Try to install Chrome first
+if ! install_chrome; then
+    echo "Chrome installation failed, trying Chromium..."
+    if ! install_chromium; then
         echo "❌ Both Chrome and Chromium installation failed"
         exit 1
     fi
 fi
 
-# Install ChromeDriver
-echo "Installing ChromeDriver..."
-CHROME_VERSION=$($CHROME_BIN_PATH --version | awk '{print $3}' | cut -d'.' -f1)
-if [ -z "$CHROME_VERSION" ]; then
-    echo "❌ Could not determine Chrome version"
-    exit 1
+# Install ChromeDriver (only if we installed Chrome, not Chromium)
+if command -v google-chrome-stable &> /dev/null; then
+    echo "Installing ChromeDriver for Chrome..."
+    CHROME_VERSION=$(google-chrome-stable --version | awk '{print $3}' | cut -d'.' -f1)
+    if [ ! -z "$CHROME_VERSION" ]; then
+        CHROMEDRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
+        if [ ! -z "$CHROMEDRIVER_VERSION" ]; then
+            wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
+            unzip /tmp/chromedriver.zip -d /usr/local/bin/
+            chmod +x /usr/local/bin/chromedriver
+            rm /tmp/chromedriver.zip
+            echo "✅ ChromeDriver installed at /usr/local/bin/chromedriver"
+            /usr/local/bin/chromedriver --version
+        fi
+    fi
 fi
 
-echo "Chrome version: $CHROME_VERSION"
-
-CHROMEDRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
-if [ -z "$CHROMEDRIVER_VERSION" ]; then
-    echo "❌ Could not determine ChromeDriver version"
-    exit 1
-fi
-
-echo "ChromeDriver version: $CHROMEDRIVER_VERSION"
-
-wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
-unzip /tmp/chromedriver.zip -d /usr/local/bin/
-chmod +x /usr/local/bin/chromedriver
-rm /tmp/chromedriver.zip
-
-# Verify ChromeDriver installation
-echo "Verifying ChromeDriver installation..."
-if [ -f "/usr/local/bin/chromedriver" ]; then
-    echo "✅ ChromeDriver installed at /usr/local/bin/chromedriver"
-    /usr/local/bin/chromedriver --version
-else
-    echo "❌ ChromeDriver not found at expected location"
-    exit 1
-fi
-
-# Set environment variables for current session and future use
-echo "Setting environment variables..."
-export CHROME_BIN=$CHROME_BIN_PATH
-export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
-
-# Create environment file for persistence
-echo "Creating environment file..."
-echo "export CHROME_BIN=$CHROME_BIN_PATH" > $HOME/.chrome_env
-echo "export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver" >> $HOME/.chrome_env
-
-echo "Environment variables set:"
-echo "CHROME_BIN=$CHROME_BIN"
-echo "CHROMEDRIVER_PATH=$CHROMEDRIVER_PATH"
-
-# Test Chrome and ChromeDriver
-echo "Testing Chrome and ChromeDriver..."
-if [ -f "$CHROME_BIN" ]; then
+# Test the installed browser
+echo "Testing installed browser..."
+source $HOME/.chrome_env
+if [ ! -z "$CHROME_BIN" ] && [ -f "$CHROME_BIN" ]; then
     echo "✅ Chrome binary exists at $CHROME_BIN"
+    echo "Browser version: $($CHROME_BIN --version)"
 else
-    echo "❌ Chrome binary not found at $CHROME_BIN"
-    exit 1
-fi
-
-if [ -f "$CHROMEDRIVER_PATH" ]; then
-    echo "✅ ChromeDriver exists at $CHROMEDRIVER_PATH"
-else
-    echo "❌ ChromeDriver not found at $CHROMEDRIVER_PATH"
+    echo "❌ Chrome binary not found"
     exit 1
 fi
 
@@ -128,3 +129,6 @@ chmod 777 downloads
 echo "========================================"
 echo "Build completed successfully!"
 echo "========================================"
+echo "Chrome binary path: $CHROME_BIN"
+echo "ChromeDriver path: $CHROMEDRIVER_PATH"
+echo "Environment file: $HOME/.chrome_env"
