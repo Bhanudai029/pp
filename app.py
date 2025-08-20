@@ -62,25 +62,38 @@ def get_chrome_options():
     chrome_bin = os.environ.get('CHROME_BIN')
     if not chrome_bin or not os.path.exists(chrome_bin):
         logger.warning(f"CHROME_BIN not set or does not exist: {chrome_bin}")
-        # Try the expected Render path
-        render_chrome_path = "/opt/render/project/.render/chrome/chrome"
-        if os.path.exists(render_chrome_path):
-            chrome_bin = render_chrome_path
-            os.environ['CHROME_BIN'] = render_chrome_path
-            logger.info(f"Found Chrome at Render path: {render_chrome_path}")
-        else:
+        # Try common locations
+        common_paths = [
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium"
+        ]
+        
+        chrome_found = False
+        for path in common_paths:
+            if os.path.exists(path):
+                chrome_bin = path
+                os.environ['CHROME_BIN'] = path
+                logger.info(f"Found Chrome at: {path}")
+                chrome_found = True
+                break
+        
+        if not chrome_found:
             # Try to find Chrome using which command
             import shutil
-            for browser in ['google-chrome-stable', 'google-chrome', 'chromium-browser', 'chromium', 'chrome']:
+            for browser in ['google-chrome-stable', 'google-chrome', 'chromium-browser', 'chromium']:
                 path = shutil.which(browser)
                 if path:
                     chrome_bin = path
                     os.environ['CHROME_BIN'] = path
                     logger.info(f"Found Chrome in PATH: {path}")
+                    chrome_found = True
                     break
             
-            if not chrome_bin or not os.path.exists(chrome_bin):
+            if not chrome_found:
                 logger.error("Chrome not found in any location!")
+                logger.error(f"Common paths checked: {common_paths}")
                 raise FileNotFoundError("Chrome browser is not installed. Please ensure Chrome is installed via build.sh")
     
     logger.info(f"Using Chrome binary: {chrome_bin}")
@@ -136,6 +149,44 @@ def get_chrome_options():
     
     logger.info("="*50)
     return chrome_options
+    chrome_options.add_argument("--disable-software-rasterizer")
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-background-timer-throttling")
+    chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+    chrome_options.add_argument("--disable-renderer-backgrounding")
+    chrome_options.add_argument("--disable-ipc-flooding-protection")
+    chrome_options.add_argument("--disable-logging")
+    chrome_options.add_argument("--disable-breakpad")
+    chrome_options.add_argument("--disable-component-update")
+    chrome_options.add_argument("--disable-default-apps")
+    chrome_options.add_argument("--disable-domain-reliability")
+    chrome_options.add_argument("--disable-sync")
+    chrome_options.add_argument("--disable-translate")
+    chrome_options.add_argument("--metrics-recording-only")
+    chrome_options.add_argument("--no-first-run")
+    chrome_options.add_argument("--safebrowsing-disable-auto-update")
+    chrome_options.add_argument("--ignore-certificate-errors")
+    chrome_options.add_argument("--ignore-ssl-errors")
+    chrome_options.add_argument("--ignore-certificate-errors-spki-list")
+    chrome_options.add_argument("--disable-features=TranslateUI")
+    chrome_options.add_argument("--disable-features=ProcessPerSiteUpToMainFrameThreshold")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    
+    # Set the binary location
+    chrome_options.binary_location = chrome_bin
+    
+    # Verify Chrome can be executed
+    try:
+        result = subprocess.run([chrome_bin, '--version'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            logger.info(f"Chrome version: {result.stdout.strip()}")
+        else:
+            logger.warning(f"Could not get Chrome version: {result.stderr}")
+    except Exception as e:
+        logger.warning(f"Could not get Chrome version: {e}")
+    
+    logger.info("="*50)
+    return chrome_options
 
 def get_chrome_driver():
     """Get Chrome driver configured for Render environment with proper error handling"""
@@ -149,7 +200,6 @@ def get_chrome_driver():
         # If not set, try common locations
         if not chromedriver_path or not os.path.exists(chromedriver_path):
             common_paths = [
-                '/opt/render/project/.render/chrome/chromedriver',
                 '/usr/local/bin/chromedriver',
                 '/usr/bin/chromedriver'
             ]
