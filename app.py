@@ -142,16 +142,17 @@ def index():
                 max-width: 800px;
                 margin: 0 auto;
                 padding: 20px;
-                background-color: #f5f5f5;
+                background-color: #121212;
+                color: #ffffff;
             }
             .container {
-                background-color: white;
+                background-color: #1e1e1e;
                 padding: 30px;
                 border-radius: 10px;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
             }
             h1 {
-                color: #3b5998;
+                color: #bb86fc;
                 text-align: center;
             }
             .form-group {
@@ -165,14 +166,16 @@ def index():
             input[type="url"] {
                 width: 100%;
                 padding: 12px;
-                border: 1px solid #ddd;
+                border: 1px solid #333333;
                 border-radius: 5px;
                 font-size: 16px;
                 box-sizing: border-box;
+                background-color: #1e1e1e;
+                color: #ffffff;
             }
             button {
-                background-color: #3b5998;
-                color: white;
+                background-color: #bb86fc;
+                color: #121212;
                 padding: 12px 24px;
                 border: none;
                 border-radius: 5px;
@@ -181,10 +184,10 @@ def index():
                 width: 100%;
             }
             button:hover {
-                background-color: #2d4373;
+                background-color: #a06cd5;
             }
             button:disabled {
-                background-color: #cccccc;
+                background-color: #333333;
                 cursor: not-allowed;
             }
             .result {
@@ -194,22 +197,22 @@ def index():
                 display: none;
             }
             .success {
-                background-color: #d4edda;
-                border: 1px solid #c3e6cb;
-                color: #155724;
+                background-color: #1e3a1e;
+                border: 1px solid #2e5e2e;
+                color: #a7d7a7;
             }
             .error {
-                background-color: #f8d7da;
-                border: 1px solid #f5c6cb;
-                color: #721c24;
+                background-color: #3a1e1e;
+                border: 1px solid #5e2e2e;
+                color: #d7a7a7;
             }
             .loading {
                 text-align: center;
                 display: none;
             }
             .spinner {
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #3b5998;
+                border: 4px solid #333333;
+                border-top: 4px solid #bb86fc;
                 border-radius: 50%;
                 width: 30px;
                 height: 30px;
