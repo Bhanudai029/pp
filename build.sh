@@ -5,17 +5,21 @@ set -o errexit
 echo "========================================"
 echo "Starting build process for Render"
 echo "========================================"
+echo "Current directory: $(pwd)"
+echo "User: $(whoami)"
+echo "========================================"
 
 # Update package lists
 echo "Updating package lists..."
-apt-get update
+apt-get update -qq
 
-# Install wget and curl if not present
-apt-get install -y wget curl
+# Install essential tools
+echo "Installing essential tools..."
+apt-get install -y -qq wget curl unzip gnupg2
 
-# Install dependencies for Chrome
+# Install Chrome dependencies
 echo "Installing Chrome dependencies..."
-apt-get install -y \
+apt-get install -y -qq \
     fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \
@@ -37,20 +41,53 @@ apt-get install -y \
     xdg-utils \
     libu2f-udev \
     libvulkan1 \
-    libglib2.0-0
+    libglib2.0-0 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxext6 \
+    libxss1 \
+    libxtst6 \
+    ca-certificates \
+    fonts-liberation \
+    lsb-release
 
 # Download and install Google Chrome Stable
+echo "Downloading Google Chrome..."
+wget -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+echo "Chrome .deb package downloaded successfully"
+
 echo "Installing Google Chrome..."
-wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-apt-get install -y /tmp/google-chrome-stable_current_amd64.deb
+dpkg -i /tmp/google-chrome-stable_current_amd64.deb || apt-get install -f -y
 rm /tmp/google-chrome-stable_current_amd64.deb
 
+# Verify Chrome installation before continuing
+if [ ! -f "/usr/bin/google-chrome-stable" ]; then
+    echo "ERROR: Chrome installation failed!"
+    echo "Attempting alternative installation method..."
+    
+    # Alternative method: Add Google's official repository
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
+    apt-get update -qq
+    apt-get install -y google-chrome-stable
+fi
+
 # Create symlink for google-chrome command
-ln -s /usr/bin/google-chrome-stable /usr/bin/google-chrome || echo "Symlink already exists or failed to create"
+ln -sf /usr/bin/google-chrome-stable /usr/bin/google-chrome || echo "Symlink already exists or failed to create"
 
 # Verify Chrome installation
-echo "Chrome installed at: $(which google-chrome-stable)"
-echo "Chrome version: $(google-chrome-stable --version)"
+if [ -f "/usr/bin/google-chrome-stable" ]; then
+    echo "SUCCESS: Chrome installed at: $(which google-chrome-stable)"
+    echo "Chrome version: $(google-chrome-stable --version)"
+    
+    # Export Chrome path as environment variable
+    export CHROME_BIN=/usr/bin/google-chrome-stable
+    echo "export CHROME_BIN=/usr/bin/google-chrome-stable" >> ~/.bashrc
+else
+    echo "ERROR: Chrome installation failed completely!"
+    exit 1
+fi
 
 # Check if google-chrome command exists
 if command -v google-chrome &> /dev/null; then
@@ -93,8 +130,25 @@ else
 fi
 
 # Verify ChromeDriver installation
-echo "ChromeDriver installed at: $(which chromedriver)"
-echo "ChromeDriver version: $(chromedriver --version)"
+if [ -f "/usr/local/bin/chromedriver" ]; then
+    echo "SUCCESS: ChromeDriver installed at: $(which chromedriver)"
+    echo "ChromeDriver version: $(chromedriver --version)"
+    
+    # Export ChromeDriver path as environment variable
+    export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+    echo "export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver" >> ~/.bashrc
+else
+    echo "ERROR: ChromeDriver installation failed!"
+    exit 1
+fi
+
+# Export environment variables for the current session
+export CHROME_BIN=/usr/bin/google-chrome-stable
+export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+
+echo "Environment variables set:"
+echo "CHROME_BIN=$CHROME_BIN"
+echo "CHROMEDRIVER_PATH=$CHROMEDRIVER_PATH"
 
 # Install Python dependencies
 echo "Installing Python dependencies..."

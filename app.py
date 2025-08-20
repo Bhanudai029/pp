@@ -35,6 +35,20 @@ last_downloaded_file = None
 
 def get_chrome_options():
     """Get Chrome options configured for Render environment"""
+    import subprocess
+    import glob
+    
+    # Log environment information
+    logger.info("="*50)
+    logger.info("Chrome Detection Starting...")
+    logger.info(f"Environment variables:")
+    logger.info(f"CHROME_BIN: {os.environ.get('CHROME_BIN', 'Not set')}")
+    logger.info(f"PATH: {os.environ.get('PATH', 'Not set')}")
+    
+    # Search for any chrome-related binaries
+    chrome_binaries = glob.glob('/usr/bin/*chrome*') + glob.glob('/opt/*/chrome*') + glob.glob('/usr/local/bin/*chrome*')
+    logger.info(f"Found chrome-related binaries: {chrome_binaries}")
+    
     chrome_options = Options()
     chrome_options.add_argument("--headless=new")  # Use new headless mode
     chrome_options.add_argument("--disable-gpu")
@@ -60,7 +74,9 @@ def get_chrome_options():
         "/usr/bin/google-chrome",
         "/usr/bin/chromium-browser",
         "/usr/bin/chromium",
-        "/opt/google/chrome/google-chrome"
+        "/opt/google/chrome/google-chrome",
+        "/opt/google/chrome/chrome",
+        "/usr/local/bin/google-chrome"
     ]
     
     chrome_found = False
@@ -68,24 +84,28 @@ def get_chrome_options():
         if chrome_path and os.path.exists(chrome_path):
             chrome_options.binary_location = chrome_path
             logger.info(f"Chrome binary found at: {chrome_path}")
+            
+            # Try to get Chrome version
+            try:
+                result = subprocess.run([chrome_path, '--version'], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    logger.info(f"Chrome version: {result.stdout.strip()}")
+            except Exception as e:
+                logger.warning(f"Could not get Chrome version: {e}")
+            
             chrome_found = True
             break
     
-    # If we still haven't found Chrome, log additional debugging info
     if not chrome_found:
         logger.error("Chrome binary not found in any expected location!")
         logger.error(f"Searched locations: {chrome_locations}")
         logger.error("Environment variables:")
         logger.error(f"CHROME_BIN: {os.environ.get('CHROME_BIN', 'Not set')}")
         logger.error(f"PATH: {os.environ.get('PATH', 'Not set')}")
-        
-        # Try to find any chrome-related binaries in common locations
-        import glob
-        chrome_bins = glob.glob("/usr/bin/*chrome*") + glob.glob("/usr/bin/*chromium*")
-        logger.error(f"Found chrome-related binaries: {chrome_bins}")
-        
+        logger.error(f"Found chrome-related binaries: {chrome_binaries}")
         raise FileNotFoundError("Chrome browser is not installed. Please ensure Chrome is installed via build.sh")
     
+    logger.info("="*50)
     return chrome_options
 
 def get_chrome_driver():
