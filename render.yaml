@@ -3,7 +3,7 @@ services:
     name: fb-profile-downloader
     runtime: python
     buildCommand: "chmod +x build.sh && sudo ./build.sh"
-    startCommand: "source .env && gunicorn app:app --timeout 120 --workers 1 --threads 1 --bind 0.0.0.0:$PORT"
+    startCommand: "ls -la && source .env && printenv && gunicorn app:app --timeout 120 --workers 1 --threads 1 --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
