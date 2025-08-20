@@ -430,6 +430,7 @@ def debug():
         },
         'chrome_paths': {},
         'processes': {}
+    }
     
     # Check various Chrome paths with detailed info
     chrome_paths = [
