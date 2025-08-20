@@ -37,6 +37,19 @@ def get_chrome_options():
     """Get Chrome options configured for Render environment"""
     import subprocess
     import glob
+    from pathlib import Path
+    
+    # Try to load environment variables from file if on Render
+    if os.environ.get('RENDER'):
+        env_file = Path.home() / '.chrome_env'
+        if env_file.exists():
+            logger.info(f"Loading environment from {env_file}")
+            with open(env_file) as f:
+                for line in f:
+                    if line.startswith('export '):
+                        line = line.replace('export ', '')
+                        key, value = line.strip().split('=', 1)
+                        os.environ[key] = value
     
     # Log environment information
     logger.info("="*50)
@@ -44,9 +57,17 @@ def get_chrome_options():
     logger.info(f"Environment variables:")
     logger.info(f"CHROME_BIN: {os.environ.get('CHROME_BIN', 'Not set')}")
     logger.info(f"PATH: {os.environ.get('PATH', 'Not set')}")
+    logger.info(f"HOME: {os.environ.get('HOME', 'Not set')}")
     
     # Search for any chrome-related binaries
-    chrome_binaries = glob.glob('/usr/bin/*chrome*') + glob.glob('/opt/*/chrome*') + glob.glob('/usr/local/bin/*chrome*')
+    home_dir = Path.home()
+    chrome_binaries = (
+        glob.glob('/usr/bin/*chrome*') + 
+        glob.glob('/opt/*/chrome*') + 
+        glob.glob('/usr/local/bin/*chrome*') +
+        glob.glob(str(home_dir / '.local/bin/*chrome*')) +
+        glob.glob(str(home_dir / '.chrome/chrome/*chrome*'))
+    )
     logger.info(f"Found chrome-related binaries: {chrome_binaries}")
     
     chrome_options = Options()
@@ -68,8 +89,13 @@ def get_chrome_options():
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
     # Try multiple Chrome binary locations
+    home_dir = Path.home()
     chrome_locations = [
         os.environ.get("CHROME_BIN"),
+        str(home_dir / ".local/bin/google-chrome-stable"),
+        str(home_dir / ".local/bin/google-chrome"),
+        str(home_dir / ".local/bin/chromium"),
+        str(home_dir / ".chrome/chrome/chrome"),
         "/usr/bin/google-chrome-stable",
         "/usr/bin/google-chrome",
         "/usr/bin/chromium-browser",
