@@ -37,20 +37,20 @@ rm /tmp/chromedriver.zip
 echo "Verifying ChromeDriver installation..."
 chromedriver --version
 
-# Set environment variables
-echo "Setting environment variables..."
-export CHROME_BIN=/usr/bin/google-chrome-stable
-export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+# Set environment variables in .env file
+echo "Creating .env file..."
+echo "CHROME_BIN=/usr/bin/google-chrome-stable" > .env
+echo "CHROMEDRIVER_PATH=/usr/local/bin/chromedriver" >> .env
 
 # Verify that the binaries are executable
 echo "Verifying binaries..."
-if [ ! -x "$CHROME_BIN" ]; then
-  echo "Error: Chrome binary not found or not executable at $CHROME_BIN"
+if [ ! -x "/usr/bin/google-chrome-stable" ]; then
+  echo "Error: Chrome binary not found or not executable at /usr/bin/google-chrome-stable"
   exit 1
 fi
 
-if [ ! -x "$CHROMEDRIVER_PATH" ]; then
-  echo "Error: ChromeDriver binary not found or not executable at $CHROMEDRIVER_PATH"
+if [ ! -x "/usr/local/bin/chromedriver" ]; then
+  echo "Error: ChromeDriver binary not found or not executable at /usr/local/bin/chromedriver"
   exit 1
 fi
 
