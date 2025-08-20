@@ -89,16 +89,28 @@ def get_chrome_options():
     chrome_options.add_argument("--disable-backgrounding-occluded-windows")
     chrome_options.add_argument("--disable-renderer-backgrounding")
     chrome_options.add_argument("--disable-ipc-flooding-protection")
+    chrome_options.add_argument("--disable-logging")
+    chrome_options.add_argument("--disable-breakpad")
+    chrome_options.add_argument("--disable-component-update")
+    chrome_options.add_argument("--disable-default-apps")
+    chrome_options.add_argument("--disable-domain-reliability")
+    chrome_options.add_argument("--disable-sync")
+    chrome_options.add_argument("--disable-translate")
+    chrome_options.add_argument("--metrics-recording-only")
+    chrome_options.add_argument("--no-first-run")
+    chrome_options.add_argument("--safebrowsing-disable-auto-update")
+    chrome_options.add_argument("--ignore-certificate-errors")
+    chrome_options.add_argument("--ignore-ssl-errors")
+    chrome_options.add_argument("--ignore-certificate-errors-spki-list")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
     # Priority order for Chrome binary locations:
     # 1. Environment variable CHROME_BIN (set by Render)
-    # 2. Standard Render location /usr/bin/google-chrome-stable
-    # 3. Other common locations
+    # 2. Standard locations
     
     chrome_locations = [
         os.environ.get("CHROME_BIN"),  # This should be set by Render
-        "/usr/bin/google-chrome-stable",  # Standard Render location
+        "/usr/bin/google-chrome-stable",
         "/usr/bin/google-chrome",
         "/usr/bin/chromium-browser",
         "/usr/bin/chromium"
@@ -128,11 +140,10 @@ def get_chrome_options():
     if not chrome_found:
         # Try to find any Chrome/Chromium binary in common locations
         possible_chrome_paths = [
+            "/usr/bin/google-chrome-stable",
             "/usr/bin/google-chrome",
-            "/usr/bin/chromium",
             "/usr/bin/chromium-browser",
-            "/opt/google/chrome/google-chrome",
-            "/snap/bin/chromium"
+            "/usr/bin/chromium"
         ]
         
         for path in possible_chrome_paths:

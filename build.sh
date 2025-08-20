@@ -12,7 +12,13 @@ echo "========================================"
 # Install system dependencies
 echo "Installing system dependencies..."
 apt-get update -qq
-apt-get install -y -qq wget gnupg unzip curl ca-certificates
+apt-get install -y -qq wget gnupg unzip curl ca-certificates fonts-liberation \
+  libasound2 libatk-bridge2.0-0 libatk1.0-0 libc6 libcairo2 libcups2 \
+  libdbus-1-3 libexpat1 libfontconfig1 libgbm1 libgcc1 libglib2.0-0 \
+  libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 \
+  libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 \
+  libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 \
+  libxss1 libxtst6 lsb-release wget xdg-utils
 
 # Add Google Chrome repository
 echo "Adding Google Chrome repository..."
@@ -31,14 +37,25 @@ echo "Verifying Chrome installation..."
 if command -v google-chrome-stable &> /dev/null; then
     echo "✅ Chrome installed successfully"
     google-chrome-stable --version
+    CHROME_BIN_PATH=$(which google-chrome-stable)
+    echo "Chrome binary path: $CHROME_BIN_PATH"
 else
-    echo "❌ Chrome installation failed"
-    exit 1
+    echo "❌ Chrome installation failed, trying Chromium..."
+    apt-get install -y -qq chromium-browser
+    if command -v chromium-browser &> /dev/null; then
+        echo "✅ Chromium installed successfully"
+        chromium-browser --version
+        CHROME_BIN_PATH=$(which chromium-browser)
+        echo "Chromium binary path: $CHROME_BIN_PATH"
+    else
+        echo "❌ Both Chrome and Chromium installation failed"
+        exit 1
+    fi
 fi
 
 # Install ChromeDriver
 echo "Installing ChromeDriver..."
-CHROME_VERSION=$(google-chrome-stable --version | awk '{print $3}' | cut -d'.' -f1)
+CHROME_VERSION=$($CHROME_BIN_PATH --version | awk '{print $3}' | cut -d'.' -f1)
 if [ -z "$CHROME_VERSION" ]; then
     echo "❌ Could not determine Chrome version"
     exit 1
@@ -69,14 +86,14 @@ else
     exit 1
 fi
 
-# Set environment variables for current session
+# Set environment variables for current session and future use
 echo "Setting environment variables..."
-export CHROME_BIN=/usr/bin/google-chrome-stable
+export CHROME_BIN=$CHROME_BIN_PATH
 export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 
 # Create environment file for persistence
 echo "Creating environment file..."
-echo "export CHROME_BIN=/usr/bin/google-chrome-stable" > $HOME/.chrome_env
+echo "export CHROME_BIN=$CHROME_BIN_PATH" > $HOME/.chrome_env
 echo "export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver" >> $HOME/.chrome_env
 
 echo "Environment variables set:"
@@ -89,16 +106,7 @@ if [ -f "$CHROME_BIN" ]; then
     echo "✅ Chrome binary exists at $CHROME_BIN"
 else
     echo "❌ Chrome binary not found at $CHROME_BIN"
-    # Try to find Chrome in other locations
-    CHROME_PATH=$(find /usr -name "*chrome*" -type f 2>/dev/null | grep -E "(chrome|chromium)" | head -1)
-    if [ ! -z "$CHROME_PATH" ] && [ -f "$CHROME_PATH" ]; then
-        echo "✅ Chrome found at alternative location: $CHROME_PATH"
-        ln -sf "$CHROME_PATH" /usr/bin/google-chrome-stable
-        echo "✅ Created symlink to /usr/bin/google-chrome-stable"
-    else
-        echo "❌ Chrome not found anywhere"
-        exit 1
-    fi
+    exit 1
 fi
 
 if [ -f "$CHROMEDRIVER_PATH" ]; then
