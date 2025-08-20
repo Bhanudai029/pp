@@ -37,18 +37,10 @@ rm /tmp/chromedriver.zip
 echo "Verifying ChromeDriver installation..."
 chromedriver --version
 
-# Set environment variables in .env file
-echo "Creating .env file..."
-echo "CHROME_BIN=/usr/bin/google-chrome-stable" > .env
-echo "CHROMEDRIVER_PATH=/usr/local/bin/chromedriver" >> .env
-
-# Verify that the environment variables are set correctly
-echo "Verifying environment variables..."
-source .env
-if [ -z "$CHROME_BIN" ] || [ -z "$CHROMEDRIVER_PATH" ]; then
-  echo "Error: CHROME_BIN or CHROMEDRIVER_PATH not set."
-  exit 1
-fi
+# Set environment variables
+echo "Setting environment variables..."
+export CHROME_BIN=/usr/bin/google-chrome-stable
+export CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 
 # Verify that the binaries are executable
 echo "Verifying binaries..."
