@@ -4,10 +4,10 @@ services:
     runtime: python
     plan: free  # Using free tier for lightweight deployment
     buildCommand: |
-      # Install Python dependencies first
+      # Install Python dependencies
       pip install -r requirements.txt
       
-      # Update and install system dependencies
+      # Update system and install dependencies
       apt-get update && apt-get install -y \
         wget \
         gnupg \
@@ -16,37 +16,43 @@ services:
         ca-certificates \
         --no-install-recommends
       
-      # Install Chromium (more reliable than Chrome on Render.com)
+      # Install Chromium (most compatible with Render.com)
       echo "Installing Chromium..."
       apt-get install -y chromium-browser --no-install-recommends
       
-      # Verify installation
-      if [ -f "/usr/bin/chromium-browser" ]; then
-        echo "✅ Chromium installed successfully"
-        /usr/bin/chromium-browser --version
+      # Verify Chromium installation
+      if [ -x "/usr/bin/chromium-browser" ]; then
+        echo "✅ Chromium installed and executable"
+        CHROME_VERSION=$(/usr/bin/chromium-browser --version)
+        echo "Chromium version: $CHROME_VERSION"
       else
-        echo "❌ Chromium installation failed"
+        echo "❌ Chromium not found or not executable"
+        echo "Checking installed packages..."
+        dpkg -l | grep chromium || echo "No chromium packages found"
         exit 1
       fi
       
-      # Install ChromeDriver compatible with Chromium
+      # Install ChromeDriver
       echo "Installing ChromeDriver..."
       CHROMIUM_VERSION=$(chromium-browser --version | grep -oP '\d+\.\d+\.\d+')
-      CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROMIUM_VERSION%%.*}")
+      MAJOR_VERSION=${CHROMIUM_VERSION%%.*}
+      CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/${MAJOR_VERSION}.0.6613.86/linux64/chromedriver-linux64.zip"
       
-      if [ -n "$CHROMEDRIVER_VERSION" ]; then
-        wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver.zip
-        unzip -q /tmp/chromedriver.zip -d /tmp/
-        mv /tmp/chromedriver-linux64/chromedriver /usr/bin/chromedriver
-        chmod +x /usr/bin/chromedriver
-        echo "✅ ChromeDriver installed successfully"
+      wget -q "$CHROMEDRIVER_URL" -O /tmp/chromedriver.zip || {
+        echo "Primary ChromeDriver URL failed, trying fallback..."
+        wget -q "https://storage.googleapis.com/chrome-for-testing-public/128.0.6613.86/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver.zip
+      }
+      
+      unzip -q /tmp/chromedriver.zip -d /tmp/
+      mv /tmp/chromedriver-linux64/chromedriver /usr/bin/chromedriver
+      chmod +x /usr/bin/chromedriver
+      
+      if [ -x "/usr/bin/chromedriver" ]; then
+        echo "✅ ChromeDriver installed and executable"
         /usr/bin/chromedriver --version
       else
-        echo "❌ Could not determine ChromeDriver version, installing fallback"
-        wget -q "https://storage.googleapis.com/chrome-for-testing-public/128.0.6613.86/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver.zip
-        unzip -q /tmp/chromedriver.zip -d /tmp/
-        mv /tmp/chromedriver-linux64/chromedriver /usr/bin/chromedriver
-        chmod +x /usr/bin/chromedriver
+        echo "❌ ChromeDriver installation failed"
+        exit 1
       fi
       
       # Clean up
@@ -63,5 +69,7 @@ services:
         value: "/usr/bin/chromium-browser"
       - key: CHROMEDRIVER_PATH
         value: "/usr/bin/chromedriver"
+      - key: DEBUG
+        value: "true"
     healthCheckPath: /health
     autoDeploy: true
