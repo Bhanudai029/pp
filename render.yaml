@@ -1,9 +1,8 @@
 services:
   - type: web
     name: fb-profile-downloader
-    runtime: python
-    buildCommand: "chmod +x build.sh && ./build.sh"
-    startCommand: "source $HOME/.chrome_env && gunicorn app:app --timeout 120 --workers 1 --threads 1 --bind 0.0.0.0:$PORT"
+    runtime: docker
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -12,18 +11,12 @@ services:
       - key: PYTHONUNBUFFERED
         value: 1
       - key: CHROME_BIN
-        value: /usr/bin/google-chrome-stable  # Default; will be overridden by build.sh
+        value: /usr/bin/google-chrome-stable
       - key: CHROMEDRIVER_PATH
         value: /usr/local/bin/chromedriver
       - key: DEBUG
-        value: "true"  # Add for more verbose logging
+        value: "true"
     autoDeploy: true
     plan: free
-    region: oregon # You can change this to your preferred region
+    region: oregon
     healthCheckPath: /health
-    buildFilter:
-      paths:
-        - "**/*.py"
-        - requirements.txt
-        - render.yaml
-        - build.sh

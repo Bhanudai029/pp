@@ -1,5 +1,6 @@
 #!/usr/bin/env/bash
 set -o errexit  # Exit on any error
+set -o xtrace   # Show all commands being executed for debugging
 
 echo "========================================"
 echo "Starting build process for Render"
@@ -7,6 +8,8 @@ echo "========================================"
 echo "Current directory: $(pwd)"
 echo "User: $(whoami)"
 echo "Home directory: $HOME"
+echo "System info:"
+uname -a
 echo "========================================"
 
 # Install system dependencies
@@ -79,6 +82,8 @@ if ! install_google_chrome; then
         echo "❌ All Chrome installation methods failed"
         echo "Checking what Chrome packages are available..."
         apt-cache search chrome || echo "No chrome packages found"
+        echo "Listing all installed packages:"
+        dpkg -l | grep -i chrome || echo "No Chrome packages installed"
         exit 1
     else
         CHROME_BIN_PATH=$(which chromium-browser)
@@ -93,6 +98,9 @@ if [ -n "$CHROME_BIN_PATH" ] && [ -x "$CHROME_BIN_PATH" ]; then
     $CHROME_BIN_PATH --version || echo "Warning: Could not get Chrome version"
 else
     echo "❌ Chrome binary not found or not executable"
+    echo "PATH: $PATH"
+    which google-chrome-stable || echo "google-chrome-stable not found in PATH"
+    which chromium-browser || echo "chromium-browser not found in PATH"
     exit 1
 fi
 
