@@ -12,7 +12,7 @@ echo "========================================"
 # Install system dependencies
 echo "Installing system dependencies..."
 apt-get update -qq
-apt-get install -y -qq wget unzip curl gnupg
+apt-get install -y -qq wget unzip curl gnupg software-properties-common
 
 # Function to install Google Chrome
 install_google_chrome() {

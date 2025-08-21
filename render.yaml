@@ -11,6 +11,8 @@ services:
         value: true
       - key: PYTHONUNBUFFERED
         value: 1
+      - key: CHROME_BIN
+        value: /usr/bin/google-chrome-stable  # Default; will be overridden by build.sh
       - key: CHROMEDRIVER_PATH
         value: /usr/local/bin/chromedriver
     autoDeploy: true
@@ -23,4 +25,3 @@ services:
         - requirements.txt
         - render.yaml
         - build.sh
-        - Dockerfile
