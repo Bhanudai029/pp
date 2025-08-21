@@ -15,6 +15,8 @@ services:
         value: /usr/bin/google-chrome-stable  # Default; will be overridden by build.sh
       - key: CHROMEDRIVER_PATH
         value: /usr/local/bin/chromedriver
+      - key: DEBUG
+        value: "true"  # Add for more verbose logging
     autoDeploy: true
     plan: free
     region: oregon # You can change this to your preferred region

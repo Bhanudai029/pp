@@ -101,9 +101,9 @@ def get_chrome_options():
     chrome_options = Options()
     chrome_options.add_argument("--headless=new")  # Use new headless mode
     chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--no-sandbox")  # Already present for sandbox issues
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-setuid-sandbox")
+    chrome_options.add_argument("--disable-setuid-sandbox")  # Already present for sandbox issues
     chrome_options.add_argument("--single-process")
     chrome_options.add_argument("--disable-dev-tools")
     chrome_options.add_argument("--no-zygote")
@@ -111,44 +111,6 @@ def get_chrome_options():
     chrome_options.add_argument("--disable-web-security")
     chrome_options.add_argument("--disable-features=VizDisplayCompositor")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("--disable-software-rasterizer")
-    chrome_options.add_argument("--disable-extensions")
-    chrome_options.add_argument("--disable-background-timer-throttling")
-    chrome_options.add_argument("--disable-backgrounding-occluded-windows")
-    chrome_options.add_argument("--disable-renderer-backgrounding")
-    chrome_options.add_argument("--disable-ipc-flooding-protection")
-    chrome_options.add_argument("--disable-logging")
-    chrome_options.add_argument("--disable-breakpad")
-    chrome_options.add_argument("--disable-component-update")
-    chrome_options.add_argument("--disable-default-apps")
-    chrome_options.add_argument("--disable-domain-reliability")
-    chrome_options.add_argument("--disable-sync")
-    chrome_options.add_argument("--disable-translate")
-    chrome_options.add_argument("--metrics-recording-only")
-    chrome_options.add_argument("--no-first-run")
-    chrome_options.add_argument("--safebrowsing-disable-auto-update")
-    chrome_options.add_argument("--ignore-certificate-errors")
-    chrome_options.add_argument("--ignore-ssl-errors")
-    chrome_options.add_argument("--ignore-certificate-errors-spki-list")
-    chrome_options.add_argument("--disable-features=TranslateUI")
-    chrome_options.add_argument("--disable-features=ProcessPerSiteUpToMainFrameThreshold")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    
-    # Set the binary location
-    chrome_options.binary_location = chrome_bin
-    
-    # Verify Chrome can be executed
-    try:
-        result = subprocess.run([chrome_bin, '--version'], capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            logger.info(f"Chrome version: {result.stdout.strip()}")
-        else:
-            logger.warning(f"Could not get Chrome version: {result.stderr}")
-    except Exception as e:
-        logger.warning(f"Could not get Chrome version: {e}")
-    
-    logger.info("="*50)
-    return chrome_options
     chrome_options.add_argument("--disable-software-rasterizer")
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-background-timer-throttling")
